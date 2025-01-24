@@ -5,7 +5,7 @@ import type { Database } from './database';
 type Cat = {
     name: string;
     breed: string;
-}
+};
 
 @Injectable()
 export class CatService {
@@ -19,4 +19,4 @@ export class CatService {
         const cats = this.db.get('cats');
         this.db.set('cats', [...cats, cat]);
     }
-} 
+}

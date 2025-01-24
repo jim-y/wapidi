@@ -1,21 +1,21 @@
 {
-  "name": "test",
-  "version": "1.0.0",
-  "main": "dist/server.js",
-  "scripts": {
-    "build": "tsc",
-    "watch": "npm run build -- -w",
-    "start": "node dist/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "body-parser": "^1.20.3",
-    "express": "^4.21.2",
-    "typescript": "^5.7.3",
-    "wapidi": "file:.."
-  }
+    "name": "test",
+    "version": "1.0.0",
+    "main": "dist/server.js",
+    "scripts": {
+        "build": "tsc",
+        "watch": "npm run build -- -w",
+        "start": "node dist/server.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "body-parser": "^1.20.3",
+        "express": "^4.21.2",
+        "typescript": "^5.7.3",
+        "wapidi": "file:.."
+    }
 }

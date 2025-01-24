@@ -4,16 +4,16 @@ import { Request, Response } from 'express';
 
 @Controller('cat')
 export class CatController {
-	@Inject(CatService) accessor catService: CatService;
+    @Inject(CatService) accessor catService: CatService;
 
-	@Get()
-	cats(req: Request, res: Response) {
-		res.json(this.catService.getAll());
-	}
+    @Get()
+    cats(req: Request, res: Response) {
+        res.json(this.catService.getAll());
+    }
 
-	@Post()
-	addCat(req: Request, res: Response) {
-		this.catService.add(req.body);
-		res.sendStatus(201);
-	}
+    @Post()
+    addCat(req: Request, res: Response) {
+        this.catService.add(req.body);
+        res.sendStatus(201);
+    }
 }
