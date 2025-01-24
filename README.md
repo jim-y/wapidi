@@ -3,7 +3,7 @@
 A lightweight web api framework with depenedency injection for Typescript and express.js projects.
 
 -   <a href="#installation">Installation</a>
--   <a href="#phylosophy">Phylosophy</a>
+-   <a href="#philosophy">Philosophy</a>
 -   <a href="#api">API</a>
     -   <a href="#api.controller">Controller()</a>
     -   <a href="#api.bind">bind()</a>
@@ -33,7 +33,7 @@ Enable these flags in your tsconfig.json file to support the decorator metadata 
 }
 ```
 
-<h2 id="phylosophy">Phylosophy</h2>
+<h2 id="philosophy">Philosophy</h2>
 
 This lightweight web api framework is opinionated but it helps managing your api routes with decorators and dependency injection.
 
