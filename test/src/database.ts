@@ -15,11 +15,17 @@ export const initialize = () => {
     db.set('cats', [
         {
             name: 'Smaug',
-            breed: 'black',
+            breed: 'mix',
         },
         {
             name: 'Shakira',
             breed: 'sphinx',
+        },
+    ]);
+    db.set('dogs', [
+        {
+            name: 'Kuglof',
+            breed: 'mix',
         },
     ]);
 };

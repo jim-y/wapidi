@@ -1,0 +1,18 @@
+@hostname = localhost
+@port = 3000
+@host = {{hostname}}:{{port}}
+@json = application/json
+
+GET http://{{host}}/dog HTTP/1.1
+Authorization: Bearer user
+
+###
+
+POST http://{{host}}/dog HTTP/1.1
+content-type: {{json}}
+Authorization: Bearer admin
+
+{
+    "name": "Semlyen",
+    "breed": "Europian Mix"
+}

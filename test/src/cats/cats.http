@@ -7,6 +7,10 @@ GET http://{{host}}/api/cat HTTP/1.1
 
 ###
 
+GET http://{{host}}/api/cat/Smaug HTTP/1.1
+
+###
+
 POST http://{{host}}/api/cat HTTP/1.1
 content-type: {{json}}
 

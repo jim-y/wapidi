@@ -1,28 +1,24 @@
 import container from './container';
+import type { BaseRoute } from '.';
 
 // @ts-ignore
 Symbol.metadata ??= Symbol('Symbol.metadata');
 
-export function Controller(prefix: string = '', tag: string | string[] = []) {
-    const tags = typeof tag === 'string' ? [tag] : tag;
+export function Controller(prefix: string = '') {
     return function (constructor: Function, context: ClassDecoratorContext) {
         context.metadata[Symbol.for('prefix')] = prefix;
-        context.metadata[Symbol.for('tags')] = [...tags, Symbol.for('controller')];
         container.register({
             provide: context.name,
-            useClass: constructor,
+            useSingleton: constructor,
         });
     };
 }
 
-export function Injectable(tag: string | string[] = []) {
-    const tags = typeof tag === 'string' ? [tag] : tag;
-    return function (constructor: Function, context: ClassDecoratorContext) {
-        container.register({
-            provide: context.name,
-            useClass: constructor,
-        });
-    };
+export function Injectable(constructor: Function, context: ClassDecoratorContext) {
+    container.register({
+        provide: context.name,
+        useClass: constructor,
+    });
 }
 
 const UNINITIALIZED = Symbol('UNINITIALIZED');
@@ -45,7 +41,7 @@ export function Inject<TValue>(token: any): any {
     };
 }
 
-export function _httpMethodDecoratorFactory(path: string, method: string) {
+function _httpMethodDecoratorFactory(path: string, method: string) {
     return function (originalMethod: any, context: ClassMethodDecoratorContext) {
         const methodName = context.name;
         const route = { method, path, action: methodName };
@@ -70,6 +66,30 @@ export function _httpMethodDecoratorFactory(path: string, method: string) {
     };
 }
 
+export function createRouteDecorator<ExtensionType = {}>(cb: (route: BaseRoute & ExtensionType) => void) {
+    return function (originalMethod: any, context: ClassMethodDecoratorContext) {
+        if (context.kind !== 'method') {
+            throw new Error('Unaplicable');
+        }
+        const methodName = context.name;
+        const routesSymbol = Symbol.for('routes');
+
+        if (!context.metadata[routesSymbol]) {
+            context.metadata[routesSymbol] = {};
+        }
+
+        if (!context.metadata[routesSymbol][methodName]) {
+            context.metadata[routesSymbol][methodName] = {} as BaseRoute;
+        }
+
+        const route: BaseRoute & ExtensionType = context.metadata[routesSymbol][methodName];
+
+        cb(route);
+
+        return originalMethod;
+    };
+}
+
 export function Get(path: string = '') {
     return _httpMethodDecoratorFactory(path, 'get');
 }
@@ -81,4 +101,37 @@ export function Delete(path: string = '') {
 }
 export function Put(path: string = '') {
     return _httpMethodDecoratorFactory(path, 'put');
+}
+
+export function Middlewares(middlewareFunctions: Function[]) {
+    return function (originalMethodOrConstructor: any, context: ClassDecoratorContext | ClassMethodDecoratorContext) {
+        const routesSymbol = Symbol.for('routes');
+
+        if (!context.metadata[routesSymbol]) {
+            context.metadata[routesSymbol] = {};
+        }
+
+        if (context.kind === 'class') {
+            const routes = Object.values(context.metadata[routesSymbol]);
+            for (const route of routes) {
+                if (!route.middlewares) route.middlewares = [];
+                const classMiddlewares = [];
+                for (const middleware of middlewareFunctions) {
+                    route.middlewares.unshift(middleware(route));
+                }
+            }
+        } else if (context.kind === 'method') {
+            if (!context.metadata[routesSymbol][context.name]) {
+                context.metadata[routesSymbol][context.name] = { action: context.name };
+            }
+            const route = context.metadata[routesSymbol][context.name];
+            if (!route.middlewares) route.middlewares = [];
+            for (const middleware of middlewareFunctions) {
+                route.middlewares = [...route.middlewares, middleware(route)];
+            }
+            return originalMethodOrConstructor;
+        } else {
+            throw new Error('Only on class or methods');
+        }
+    };
 }

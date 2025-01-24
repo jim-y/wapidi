@@ -7,8 +7,13 @@ export class CatController {
     @Inject(CatService) accessor catService: CatService;
 
     @Get()
-    cats(req: Request, res: Response) {
+    getAll(req: Request, res: Response) {
         res.json(this.catService.getAll());
+    }
+
+    @Get(':name')
+    get(req: Request, res: Response) {
+        res.json(this.catService.getByName(req.params.name));
     }
 
     @Post()

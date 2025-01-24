@@ -1,16 +1,8 @@
-import { InjectionToken } from './index';
+import { InjectionToken, Config } from './index';
 
 type Entry = {
     type: 'class' | 'constant' | 'factory';
     value: any;
-};
-
-type Config = {
-    provide: any;
-    useClass?: any;
-    useFactory?: () => any;
-    useValue?: any;
-    useSingleton?: any;
 };
 
 class Container {
