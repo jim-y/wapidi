@@ -1,53 +1,84 @@
+import { InjectionToken } from './index';
+
 type Entry = {
-    type: 'class' | 'constant' | 'factory';
-    value: any;
+	type: 'class' | 'constant' | 'factory';
+	value: any;
 };
 
 type Config = {
-    provide: any;
-    useClass?: any;
-    useFactory?: () => any;
-    useValue?: any;
-    useSingleton?: any;
-}
+	provide: any;
+	useClass?: any;
+	useFactory?: () => any;
+	useValue?: any;
+	useSingleton?: any;
+};
 
 class Container {
-    #store = new Map<string, Entry>();
+	#store = new Map<string, Entry>();
 
-    public register(config: Config) {
-        if (config.useFactory) {
+	public register(config: Config) {
+		let token = config.provide.name ?? config.provide;
 
-        } else if (config.useValue) {
+		if (config.provide instanceof InjectionToken) {
+			token = config.provide.token;
+		}
 
-        } else {
-            const _class = config.useClass ? config.useClass : config.provide;
-            const token = _class.name;
-            this.#store.set(token, {
-                type: 'class',
-                value: _class
-            });
-        }
-    }
+		if (config.useFactory) {
+			this.#store.set(token, {
+				type: 'factory',
+				value: config.useFactory,
+			});
+		} else if (config.useSingleton) {
+			this.#store.set(token, {
+				type: 'constant',
+				value: new config.useSingleton(),
+			});
+		} else if (config.useValue) {
+			this.#store.set(token, {
+				type: 'constant',
+				value: config.useValue,
+			});
+		} else {
+			const _class = config.useClass ? config.useClass : config.provide;
+			this.#store.set(_class.name, {
+				type: 'class',
+				value: _class,
+			});
+		}
+	}
 
-    public setup(configs: Config[]) {
-        for (const config of configs) {
-            this.register(config);
-        }
-    }
+	public setup(configs: Config[]) {
+		for (const config of configs) {
+			this.register(config);
+		}
+	}
 
-    public get<T>(token: any) {
-        const entry = this.#store.get(token.name ?? token);
+	public get<T>(injectionToken: any) {
+		let token = injectionToken.name ?? injectionToken;
 
-        if (!entry) throw new Error('No such entry');
+		if (injectionToken instanceof InjectionToken) {
+			token = injectionToken.token;
+		}
 
-        switch (entry.type) {
-            case 'class': {
-                const instance: T = new entry.value();
-                return instance;
-            }
-            default: throw new Error('unknown type')
-        }
-    }
+		const entry = this.#store.get(token);
+
+		if (!entry) throw new Error('No such entry');
+
+		switch (entry.type) {
+			case 'class': {
+				const instance: T = new entry.value();
+				return instance;
+			}
+			case 'constant': {
+				return entry.value;
+			}
+			case 'factory': {
+				return entry.value(this);
+			}
+			default:
+				throw new Error('unknown type');
+		}
+	}
 }
 
 export default new Container();
