@@ -457,6 +457,8 @@ export const initialize = () => {
 Usage:
 
 ```ts
+import { container, InjectionToken } from 'wapidi';
+
 /// class
 container.register({
     provide: UserService,
@@ -485,11 +487,38 @@ container.register({
 
 ### setup()
 
+Usage:
+
+```ts
+import { container, InjectionToken } from 'wapidi';
+
+const ENV = new InjectionToken('env');
+const LOGGER = new InjectionToken('logger factory')
+
+container.setup([
+    {
+        provide: ENV,
+        useValue: process.env.NODE_ENV ?? 'development'
+    },
+    {
+        provide: UserService
+    },
+    {
+        provide: LOGGER,
+        useFactory: (container: Container) => {
+            const env = container.get(ENV);
+            return env === 'development' ? 'this' : 'that';
+        } 
+    }
+])
+```
+
 ### get()
 
 Usage:
 
 ```ts
+import { container } from 'wapidi';
 container.get(CONFIG);
 ```
 

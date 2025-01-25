@@ -1,4 +1,6 @@
-export { default as container } from './container';
+import { Container } from '.';
+
+export { default as container, Container } from './container';
 export * from './decorators';
 export * from './bind';
 export { default as InjectionToken } from './InjectionToken';
@@ -6,7 +8,7 @@ export { default as InjectionToken } from './InjectionToken';
 export type Config = {
     provide: any;
     useClass?: any;
-    useFactory?: () => any;
+    useFactory?: (container: Container) => any;
     useValue?: any;
     useSingleton?: any;
 };

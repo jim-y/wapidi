@@ -5,7 +5,7 @@ type Entry = {
     value: any;
 };
 
-class Container {
+export class Container {
     #store = new Map<string, Entry>();
 
     public register(config: Config) {
