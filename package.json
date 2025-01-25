@@ -14,8 +14,11 @@
     "keywords": [
         "express",
         "typescript",
+        "javascript",
+        "node",
         "api",
         "dependency injection",
+        "container",
         "di",
         "ioc",
         "express.js",
