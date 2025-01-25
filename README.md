@@ -537,4 +537,4 @@ export type BaseRoute = {
 
 <h2 id="examples">Examples</h2>
 
-Please check the [test](https://github.com/jim-y/wapidi/tree/main/test) folder for examples.
+Please check the [examples](https://github.com/jim-y/wapidi/tree/main/examples) folder for examples
