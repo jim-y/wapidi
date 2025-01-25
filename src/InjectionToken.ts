@@ -1,6 +1,4 @@
-import { randomUUID } from 'node:crypto';
-
-export default class InjectionToken<T> {
-    token = randomUUID();
-    constructor(private description?: string) {}
+export default class InjectionToken {
+    token = Symbol();
+    constructor(public description?: string) {}
 }

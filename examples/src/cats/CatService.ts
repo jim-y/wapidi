@@ -7,12 +7,12 @@ type Cat = {
     breed: string;
 };
 
-@Injectable
+@Injectable()
 export class CatService {
-    @Inject(DB) accessor db: Database;
+    @Inject(DB) accessor #db: Database;
 
     getAll() {
-        return this.db.get('cats');
+        return this.#db.get('cats');
     }
 
     getByName(name: Cat['name']) {
@@ -21,7 +21,7 @@ export class CatService {
     }
 
     add(cat: Cat) {
-        const cats = this.db.get('cats');
-        this.db.set('cats', [...cats, cat]);
+        const cats = this.#db.get('cats');
+        this.#db.set('cats', [...cats, cat]);
     }
 }

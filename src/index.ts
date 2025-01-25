@@ -1,22 +1,10 @@
-import { Container } from '.';
+import { Store } from './container';
+import type { Container } from './types';
 
-export { default as container, Container } from './container';
+export { default as InjectionToken } from './InjectionToken';
 export * from './decorators';
 export * from './bind';
-export { default as InjectionToken } from './InjectionToken';
+export * from './types';
+export * from './errors';
 
-export type Config = {
-    provide: any;
-    useClass?: any;
-    useFactory?: (container: Container) => any;
-    useValue?: any;
-    useSingleton?: any;
-};
-
-export type HTTPVerb = 'get' | 'post' | 'patch' | 'put' | 'delete';
-export type BaseRoute = {
-    method: HTTPVerb;
-    path: string;
-    action: string;
-    middlewares: Function[];
-};
+export const container: Container = new Store();

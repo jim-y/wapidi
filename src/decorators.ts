@@ -1,137 +1,169 @@
-import container from './container';
-import type { BaseRoute } from '.';
+import { container, DecoratorError, InjectionToken, WapidiError } from '.';
+import { getRoute, getRoutes, httpMethodDecoratorFactory } from './helpers';
+import type { BaseRoute, InjectionTokenType, Instantiable } from './types';
 
 // @ts-ignore
 Symbol.metadata ??= Symbol('Symbol.metadata');
 
-export function Controller(prefix: string = '') {
-    return function (constructor: Function, context: ClassDecoratorContext) {
-        context.metadata[Symbol.for('prefix')] = prefix;
-        container.register({
-            provide: context.name,
-            useSingleton: constructor,
-        });
-    };
-}
-
-export function Injectable(constructor: Function, context: ClassDecoratorContext) {
-    container.register({
-        provide: context.name,
-        useClass: constructor,
-    });
-}
-
 const UNINITIALIZED = Symbol('UNINITIALIZED');
-export function Inject<TValue>(token: any): any {
-    return function (value: any, context: ClassAccessorDecoratorContext<unknown, TValue>) {
-        if (context.kind !== 'accessor') {
-            throw new Error('The Inject() decorator must be used as a class field decorator');
+
+export function Controller(prefix: string = '') {
+    return function (constructor: Instantiable, context: ClassDecoratorContext) {
+        try {
+            if (context.kind !== 'class') {
+                throw new DecoratorError('The @Controller decorator factory can only be used on the class');
+            }
+            context.metadata[Symbol.for('prefix')] = prefix;
+            container.register({
+                provide: context.name,
+                useSingleton: constructor,
+            });
+        } catch (error) {
+            throw new WapidiError(error);
         }
-        return {
-            init() {
-                return UNINITIALIZED;
-            },
-            get() {
-                return container.get<TValue>(token);
-            },
-            set() {
-                throw new Error('must not set!');
-            },
-        };
     };
 }
 
-function _httpMethodDecoratorFactory(path: string, method: string) {
-    return function (originalMethod: any, context: ClassMethodDecoratorContext) {
-        const methodName = context.name;
-        const route = { method, path, action: methodName };
-
-        const routesSymbol = Symbol.for('routes');
-
-        if (!context.metadata[routesSymbol]) {
-            context.metadata[routesSymbol] = {};
+export function Injectable(as?: InjectionToken) {
+    return function (constructor: Instantiable, context: ClassDecoratorContext) {
+        try {
+            if (context.kind !== 'class') {
+                throw new DecoratorError('The @Injectable decorator factory can only be used on the class');
+            }
+            container.register({
+                provide: as ?? constructor,
+                useClass: constructor,
+            });
+        } catch (error) {
+            throw new WapidiError(error);
         }
+    };
+}
 
-        const routeMeta = context.metadata[routesSymbol][methodName];
+export function Singleton(as?: InjectionToken) {
+    return function (constructor: Instantiable, context: ClassDecoratorContext) {
+        try {
+            if (context.kind !== 'class') {
+                throw new DecoratorError('The @Singleton decorator factory can only be used on the class');
+            }
+            container.register({
+                provide: as ?? constructor,
+                useSingleton: constructor,
+            });
+        } catch (error) {
+            throw new WapidiError(error);
+        }
+    };
+}
 
-        if (!routeMeta) {
-            context.metadata[routesSymbol][methodName] = route;
-        } else {
-            context.metadata[routesSymbol][methodName] = {
-                ...routeMeta,
-                ...route,
+export function Inject<T>(token: Instantiable | InjectionTokenType): any {
+    return function ({ get, set }, context: ClassAccessorDecoratorContext<unknown, T>) {
+        try {
+            if (context.kind !== 'accessor') {
+                throw new DecoratorError(
+                    'The Inject() decorator factory must be used as a class auto-accessor decorator'
+                );
+            }
+
+            return {
+                init(initialValue) {
+                    if (initialValue != null) {
+                        console.warn(
+                            `Accessor ${this.constructor.name}.${String(
+                                context.name
+                            )} was initialized with a value, however, this value will be overriden by the injected value.`
+                        );
+                    }
+                    return UNINITIALIZED;
+                },
+                get(): T {
+                    const currentValue = get.call(this);
+                    if (currentValue === UNINITIALIZED) {
+                        const value = container.get<T>(token);
+                        set.call(this, value);
+                        return value;
+                    }
+                    return currentValue;
+                },
+                set(newValue: T) {
+                    try {
+                        const oldValue = get.call(this);
+                        if (oldValue !== UNINITIALIZED) {
+                            throw new DecoratorError(
+                                `Accessor ${this.constructor.name}.${String(context.name)} can only be set once`
+                            );
+                        }
+                        set.call(this, newValue);
+                    } catch (error) {
+                        throw new WapidiError(error);
+                    }
+                },
             };
+        } catch (error) {
+            throw new WapidiError(error);
         }
-        return originalMethod;
-    };
-}
-
-export function createRouteDecorator<ExtensionType = {}>(cb: (route: BaseRoute & ExtensionType) => void) {
-    return function (originalMethod: any, context: ClassMethodDecoratorContext) {
-        if (context.kind !== 'method') {
-            throw new Error('Unaplicable');
-        }
-        const methodName = context.name;
-        const routesSymbol = Symbol.for('routes');
-
-        if (!context.metadata[routesSymbol]) {
-            context.metadata[routesSymbol] = {};
-        }
-
-        if (!context.metadata[routesSymbol][methodName]) {
-            context.metadata[routesSymbol][methodName] = {} as BaseRoute;
-        }
-
-        const route: BaseRoute & ExtensionType = context.metadata[routesSymbol][methodName];
-
-        cb(route);
-
-        return originalMethod;
     };
 }
 
 export function Get(path: string = '') {
-    return _httpMethodDecoratorFactory(path, 'get');
+    return httpMethodDecoratorFactory(path, 'get');
 }
 export function Post(path: string = '') {
-    return _httpMethodDecoratorFactory(path, 'post');
+    return httpMethodDecoratorFactory(path, 'post');
 }
 export function Delete(path: string = '') {
-    return _httpMethodDecoratorFactory(path, 'delete');
+    return httpMethodDecoratorFactory(path, 'delete');
 }
 export function Put(path: string = '') {
-    return _httpMethodDecoratorFactory(path, 'put');
+    return httpMethodDecoratorFactory(path, 'put');
+}
+export function Patch(path: string = '') {
+    return httpMethodDecoratorFactory(path, 'patch');
 }
 
 export function Middlewares(middlewareFunctions: Function[]) {
     return function (originalMethodOrConstructor: any, context: ClassDecoratorContext | ClassMethodDecoratorContext) {
-        const routesSymbol = Symbol.for('routes');
-
-        if (!context.metadata[routesSymbol]) {
-            context.metadata[routesSymbol] = {};
-        }
-
-        if (context.kind === 'class') {
-            const routes = Object.values(context.metadata[routesSymbol]);
-            for (const route of routes) {
-                if (!route.middlewares) route.middlewares = [];
-                const classMiddlewares = [];
-                for (const middleware of middlewareFunctions) {
-                    route.middlewares.unshift(middleware(route));
+        try {
+            if (context.kind === 'class') {
+                const routes = getRoutes(context);
+                for (const route of routes) {
+                    if (!route.middlewares) route.middlewares = [];
+                    for (let index = middlewareFunctions.length - 1; index >= 0; index--) {
+                        route.middlewares.unshift(middlewareFunctions[index](route));
+                    }
                 }
+            } else if (context.kind === 'method') {
+                const route = getRoute(context);
+                if (!route.middlewares) route.middlewares = [];
+                for (const middleware of middlewareFunctions) {
+                    route.middlewares.push(middleware(route));
+                }
+                return originalMethodOrConstructor;
+            } else {
+                throw new DecoratorError(
+                    'The @Middlewares() decorator factory can be only applied on the class or on class methods'
+                );
             }
-        } else if (context.kind === 'method') {
-            if (!context.metadata[routesSymbol][context.name]) {
-                context.metadata[routesSymbol][context.name] = { action: context.name };
+        } catch (error) {
+            throw new WapidiError(error);
+        }
+    };
+}
+
+// =========================
+//          Util
+// =========================
+
+export function createRouteDecorator<ExtensionType>(cb: (route: BaseRoute & ExtensionType) => any) {
+    return function (originalMethod: any, context: ClassMethodDecoratorContext) {
+        try {
+            if (context.kind !== 'method') {
+                throw new DecoratorError('A route decorator | decorator factory can only be used on a class method');
             }
-            const route = context.metadata[routesSymbol][context.name];
-            if (!route.middlewares) route.middlewares = [];
-            for (const middleware of middlewareFunctions) {
-                route.middlewares = [...route.middlewares, middleware(route)];
-            }
-            return originalMethodOrConstructor;
-        } else {
-            throw new Error('Only on class or methods');
+            cb(getRoute<BaseRoute & ExtensionType>(context));
+            return originalMethod;
+        } catch (error) {
+            throw new WapidiError(error);
         }
     };
 }

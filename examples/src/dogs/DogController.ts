@@ -32,19 +32,19 @@ const Role = (role: Route['role']) => createRouteDecorator<Route>(route => (rout
 @Controller('dog')
 @Middlewares([EnsureAuthenticated])
 export class DogController {
-    @Inject(DogService) accessor dogService: DogService;
+    @Inject(DogService) accessor #dogService: DogService;
 
     @Get()
     @Role('user')
     @Middlewares([EnsureAuthorized])
     getAll(req: Request, res: Response) {
-        res.json(this.dogService.getAll());
+        res.json(this.#dogService.getAll());
     }
 
     @Post()
     @Middlewares([RequireRole('admin')])
     add(req: Request, res: Response) {
-        this.dogService.add(req.body);
+        this.#dogService.add(req.body);
         res.sendStatus(201);
     }
 }

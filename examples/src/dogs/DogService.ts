@@ -7,16 +7,16 @@ type Dog = {
     breed: string;
 };
 
-@Injectable
+@Injectable()
 export class DogService {
-    @Inject(DB) private accessor db: Database;
+    @Inject(DB) accessor #db: Database;
 
     getAll() {
-        return this.db.get('dogs');
+        return this.#db.get('dogs');
     }
 
     add(dog: Dog) {
-        const dogs = this.db.get('dogs');
-        this.db.set('dogs', [...dogs, dog]);
+        const dogs = this.#db.get('dogs');
+        this.#db.set('dogs', [...dogs, dog]);
     }
 }

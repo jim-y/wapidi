@@ -8,10 +8,14 @@
         "/dist"
     ],
     "scripts": {
-        "clean": "rimraf dist",
-        "build": "npm run clean && tsc",
+        "prebuild": "rimraf dist",
+        "build": "tsc",
         "watch": "npm run build -- -w",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "prebuild:tests": "rimraf test",
+        "build:tests": "tsc --project tests",
+        "pretest": "npm run build:tests",
+        "watch:tests": "npm run build:tests -- -w",
+        "test": "node --test"
     },
     "keywords": [
         "express",

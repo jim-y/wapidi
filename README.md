@@ -17,7 +17,11 @@ A lightweight web api framework with dependency injection for Typescript and exp
 
 <h2 id="installation">Installation</h2>
 
-`npm install --save wapidi`
+With npm:
+
+```bash
+npm install --save wapidi
+```
 
 Wapidi relies on new typescript features like the stage 3 decorators introduced in typescript 5.0 and the decorator metadata feature introduced in version 5.2. This means you should at least be on version 5.2 of typescript.
 

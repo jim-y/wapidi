@@ -1,41 +1,82 @@
-import { InjectionToken, Config } from './index';
+import { generateInjectionToken, isClassLike, isString, isFunction } from './helpers';
+import InjectionToken from './InjectionToken';
+import {
+    isClassProviderConfig,
+    isClassProviderShorthandConfig,
+    isFactoryProviderConfig,
+    isSingletonProviderConfig,
+    isValueProviderConfig,
+} from './types';
+import { ConfigurationError, ContainerError, WapidiError } from './errors';
+import type { Config, InjectionTokenType, Instantiable, Container, Registry, Entry } from './types';
 
-type Entry = {
-    type: 'class' | 'constant' | 'factory';
-    value: any;
-};
+export class Store implements Container {
+    id: Symbol = Symbol();
 
-export class Container {
-    #store = new Map<string, Entry>();
+    #registry: Registry = new Map<Symbol, Entry>();
+    #spawns: Store[] = [];
+    #parent: Store;
+
+    constructor(parent?: Store, registry?: Registry) {
+        this.#parent = parent;
+        if (registry) {
+            this.#registry = registry;
+        }
+    }
+
+    public spawn(copy: boolean = false): Container {
+        const spawn: Store = copy ? new Store(this, this.#registry) : new Store(this);
+        this.#spawns.push(spawn);
+        return spawn;
+    }
+
+    public get spawns() {
+        return this.#spawns.map(spawn => spawn.id);
+    }
 
     public register(config: Config) {
-        let token = config.provide.name ?? config.provide;
+        try {
+            if (!config.provide) throw new ConfigurationError('config.provide must be provided');
 
-        if (config.provide instanceof InjectionToken) {
-            token = config.provide.token;
-        }
+            const token: Symbol = generateInjectionToken(config);
 
-        if (config.useFactory) {
-            this.#store.set(token, {
-                type: 'factory',
-                value: config.useFactory,
-            });
-        } else if (config.useSingleton) {
-            this.#store.set(token, {
-                type: 'constant',
-                value: new config.useSingleton(),
-            });
-        } else if (config.useValue) {
-            this.#store.set(token, {
-                type: 'constant',
-                value: config.useValue,
-            });
-        } else {
-            const _class = config.useClass ? config.useClass : config.provide;
-            this.#store.set(_class.name, {
-                type: 'class',
-                value: _class,
-            });
+            if (this.#registry.has(token)) throw new ContainerError('The provider is already registered');
+
+            if (isFactoryProviderConfig(config)) {
+                if (!isFunction(config.useFactory))
+                    throw new ConfigurationError('`config.useFactory` should be a function');
+                this.#registry.set(token, {
+                    type: 'factory',
+                    value: config.useFactory,
+                });
+            } else if (isSingletonProviderConfig(config)) {
+                if (!isClassLike(config.useSingleton))
+                    throw new ConfigurationError('`config.useSingleton` should be a class');
+                this.#registry.set(token, {
+                    type: 'constant',
+                    value: new config.useSingleton(),
+                });
+            } else if (isValueProviderConfig(config)) {
+                this.#registry.set(token, {
+                    type: 'constant',
+                    value: config.useValue,
+                });
+            } else if (isClassProviderConfig(config)) {
+                if (!isClassLike(config.useClass)) throw new ConfigurationError('`config.useClass` should be a class');
+                this.#registry.set(token, {
+                    type: 'class',
+                    value: config.useClass,
+                });
+            } else if (isClassProviderShorthandConfig(config)) {
+                this.#registry.set(token, {
+                    type: 'class',
+                    value: config.provide,
+                });
+            } else {
+                throw new ConfigurationError('Invalid configuration provided for `container.register()`');
+            }
+        } catch (error) {
+            throw new WapidiError(error);
         }
     }
 
@@ -45,32 +86,63 @@ export class Container {
         }
     }
 
-    public get<T>(injectionToken: any) {
-        let token = injectionToken.name ?? injectionToken;
+    public get<T>(injectionToken: Instantiable | InjectionTokenType): T {
+        try {
+            let token: Symbol;
+            let friendlyName: string;
 
-        if (injectionToken instanceof InjectionToken) {
-            token = injectionToken.token;
+            if (isClassLike(injectionToken)) {
+                token = Symbol.for(injectionToken.name);
+                friendlyName = injectionToken.name;
+            } else if (injectionToken instanceof InjectionToken) {
+                token = injectionToken.token;
+                friendlyName =
+                    injectionToken.description ??
+                    `[unnamed InjectionToken instance][token:${injectionToken.token.toString()}]`;
+            } else if (isString(injectionToken)) {
+                token = Symbol.for(injectionToken);
+                friendlyName = injectionToken;
+            } else {
+                throw new ContainerError('Invalid injectonToken type is provided for `container.get()`');
+            }
+
+            const entry = this.#registry.get(token);
+
+            if (!entry) throw new ContainerError(`No provider found by the provided injectonToken: ${friendlyName}`);
+
+            switch (entry.type) {
+                case 'class': {
+                    const instance = new entry.value();
+                    return instance;
+                }
+                case 'constant': {
+                    return entry.value;
+                }
+                case 'factory': {
+                    return entry.value(this);
+                }
+                default:
+                    throw new ContainerError('Unknown entry type. This is likely a bug in wapidi');
+            }
+        } catch (error) {
+            throw new WapidiError(error);
         }
+    }
 
-        const entry = this.#store.get(token);
+    public dispose() {
+        this.#registry.clear();
+        for (const spawn of this.#spawns) {
+            spawn.dispose();
+        }
+        if (this.#parent) {
+            this.#parent.onChildDisposed(this.id);
+        }
+    }
 
-        if (!entry) throw new Error('No such entry');
-
-        switch (entry.type) {
-            case 'class': {
-                const instance: T = new entry.value();
-                return instance;
-            }
-            case 'constant': {
-                return entry.value;
-            }
-            case 'factory': {
-                return entry.value(this);
-            }
-            default:
-                throw new Error('unknown type');
+    private onChildDisposed(childId: Symbol) {
+        const childIndex = this.#spawns.findIndex(spawn => spawn.id === childId);
+        if (childIndex > -1) {
+            this.#spawns.splice(childIndex, 1);
         }
     }
 }
-
-export default new Container();

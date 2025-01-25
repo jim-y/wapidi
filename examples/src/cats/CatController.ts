@@ -6,23 +6,23 @@ import type { Logger } from '../logger';
 
 @Controller('cat')
 export class CatController {
-    @Inject(CatService) accessor catService: CatService;
-    @Inject(LOGGER) accessor logger: Logger;
+    @Inject(CatService) accessor #catService: CatService;
+    @Inject(LOGGER) accessor #logger: Logger;
 
     @Get()
     getAll(req: Request, res: Response) {
-        this.logger.log('Calling getAll()');
-        res.json(this.catService.getAll());
+        this.#logger.log('Calling getAll()');
+        res.json(this.#catService.getAll());
     }
 
     @Get(':name')
     get(req: Request, res: Response) {
-        res.json(this.catService.getByName(req.params.name));
+        res.json(this.#catService.getByName(req.params.name));
     }
 
     @Post()
     addCat(req: Request, res: Response) {
-        this.catService.add(req.body);
+        this.#catService.add(req.body);
         res.sendStatus(201);
     }
 }
