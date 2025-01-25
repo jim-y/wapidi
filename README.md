@@ -1,6 +1,6 @@
 # WAPIDI
 
-A lightweight web api framework with depenedency injection for Typescript and express.js projects.
+A lightweight web api framework with dependency injection for Typescript and express projects.
 
 -   <a href="#installation">Installation</a>
 -   <a href="#philosophy">Philosophy</a>
@@ -13,6 +13,7 @@ A lightweight web api framework with depenedency injection for Typescript and ex
     -   <a href="#api.middlewares">Middlewares()</a>
     -   <a href="#api.create.middlewares">createRouteDecorator()</a>
 -   <a href="#container">Dependency Injection</a>
+-   <a href="#examples">Examples</a>
 
 <h2 id="installation">Installation</h2>
 
@@ -493,24 +494,24 @@ Usage:
 import { container, InjectionToken } from 'wapidi';
 
 const ENV = new InjectionToken('env');
-const LOGGER = new InjectionToken('logger factory')
+const LOGGER = new InjectionToken('logger factory');
 
 container.setup([
     {
         provide: ENV,
-        useValue: process.env.NODE_ENV ?? 'development'
+        useValue: process.env.NODE_ENV ?? 'development',
     },
     {
-        provide: UserService
+        provide: UserService,
     },
     {
         provide: LOGGER,
         useFactory: (container: Container) => {
             const env = container.get(ENV);
             return env === 'development' ? 'this' : 'that';
-        } 
-    }
-])
+        },
+    },
+]);
 ```
 
 ### get()
@@ -533,3 +534,7 @@ export type BaseRoute = {
     middlewares: Function[];
 };
 ```
+
+<h2 id="examples">Examples</h2>
+
+Please check the [test](https://github.com/jim-y/wapidi/tree/main/test) folder for examples.

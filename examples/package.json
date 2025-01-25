@@ -1,5 +1,6 @@
 {
-    "name": "test",
+    "name": "examples",
+    "private": true,
     "version": "1.0.0",
     "main": "dist/server.js",
     "scripts": {
