@@ -61,7 +61,7 @@ import type { Container } from 'wapidi/types';
 If you don't use `express` but still want to use `wapidi` you can install `wapidi` by omitting express as
 
 ```bash
-npm install wapidi --omit optional
+npm install wapidi --omit=optional
 ```
 
 then, you should import from sub-modules and make sure to **not** import from `wapidi/server`. Only this sub-module references `express` and only this provides the express helpers.
