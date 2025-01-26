@@ -5,18 +5,27 @@ A lightweight web api framework with dependency injection for Typescript and exp
 -   <a href="#installation">Installation</a>
 -   <a href="#usage">Usage</a>
 -   <a href="#philosophy">Philosophy</a>
--   <a href="#api">API</a>
-    -   <a href="#api.controller">Controller()</a>
-    -   <a href="#api.bind">bind()</a>
-    -   <a href="#api.injectable">Injectable</a>
-    -   <a href="#api.inject">Inject()</a>
+-   <a href="#api">Decorator API</a>
+    -   <a href="#api.controller">@Controller()</a>
+    -   <a href="#api.injectable">@Injectable()</a>
+    -   <a href="#api.singleton">@Singleton()</a>
+    -   <a href="#api.inject">@Inject()</a>
     -   <a href="#api.verbs">HTTP Verbs</a>
-    -   <a href="#api.middlewares">Middlewares()</a>
+    -   <a href="#api.middlewares">@Middlewares()</a>
     -   <a href="#api.create.middlewares">createRouteDecorator()</a>
--   <a href="#container">Dependency Injection</a>
+-   <a href="#container">Container API</a>
+    -   <a href="#container.injectiontoken">InjectionToken()</a>
+    -   <a href="#container.register">register()</a>
+    -   <a href="#container.setup">setup()</a>
+    -   <a href="#container.get">get()</a>
+    -   <a href="#container.spawn">spawn()</a>
+    -   <a href="#container.dispose">dispose()</a>
+-   <a href="#server">Server API</a>
+    -   <a href="#server.bind">bind()</a>
 -   <a href="#route">Route</a>
 -   <a href="#examples">Examples</a>
 -   <a href="#no-express">Not using express?</a>
+    -   <a href="no-express.routes">getRoutesMeta()</a>
 
 <h2 id="installation">Installation</h2>
 
@@ -79,7 +88,7 @@ In typescript there are 2 decorator implementations:
 1. Experimental decorators [https://www.typescriptlang.org/docs/handbook/decorators.html#handbook-content](https://www.typescriptlang.org/docs/handbook/decorators.html#handbook-content)
 2. ECMAScript decorators [https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators](https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators)
 
-The former is available for a long time in typescript, and other DI implementations rely on them. However .. to leverage their full capabilities with metadata you are required to install the `reflect-metadata` package.
+The former is available for a long time in typescript, and other dependency injection implementations rely on them.
 
 The latter implementation was "recently" (March 16th, 2023) added in Typescript 5.0 and it doesn't rely on the `reflect-metadata` package and it implements [https://github.com/tc39/proposal-decorators](https://github.com/tc39/proposal-decorators).
 
@@ -125,7 +134,7 @@ class CatController {
 CatService.ts
 
 ```ts
-@Injectable
+@Injectable()
 export class CatService {
     @Inject(DB) accessor #db: Database;
 
@@ -171,42 +180,20 @@ app.use('/api', bind(CatController));
 
 Then your endpoint is reachable
 
-cat.http
-
 ```http
 GET http://localhost:3000/api/v1/cat HTTP/1.1
 ```
 
-<h3 id="api.bind">bind()</h3>
-
-Binds controller endpoints to an express instance. Similar to how one would bind an express Router instance to an express instance.
-
-**Note**: unlike any other function, you have to import this from `wapidi/server`. This ensures that one can use `wapidi` without express. See the <a href="#no-express">Not using express?</a> section.
-
-Usage:
-
-```ts
-import express from 'express';
-import { bind } from 'wapidi/server';
-import { CatController } from './CatController';
-import { DogController } from './DogController';
-
-const app = express();
-
-app.use('/api', bind(CatController));
-app.use(bind(DogController));
-```
-
 <h3 id="api.injectable">Injectable</h3>
 
-Class decorator. Marks a class as injectable by dependency injection.
+Class decorator factory. Marks a class as injectable by dependency injection.
 
 Usage:
 
 ```ts
 import { Injectable } from 'wapidi';
 
-@Injectable
+@Injectable()
 export class EchoService {
     echo() {
         return 'echo';
@@ -214,23 +201,42 @@ export class EchoService {
 }
 ```
 
-Consuming the injectable can be done either by using the `Inject()` decorator in another injectable, or getting it from the ioc container.
+Consuming the provider can be done either by using the `Inject()` decorator in another injectable, or getting it from the IoC container. For every dependable creates a new instance.
 
 ```ts
 /// either
 
-@Injectable
+@Injectable()
 class SomeClass {
-    @Inject(EchoService) accessor echoService: EchoService;
+    @Inject(EchoService) accessor #echoService: EchoService;
 }
 
 /// or
 
 async function EnsureAuthenticated(req, res, next) {
-    const someHelper = container.get(SomeHelper);
+    const echoServiceInstance = container.get<EchoService>(EchoService);
     // ...
 }
 ```
+
+<h3 id="api.singleton">Singleton</h3>
+
+Class decorator factory. Marks a class as injectable by dependency injection.
+
+Usage:
+
+```ts
+import { Singleton } from 'wapidi';
+
+@Singleton()
+export class EchoService {
+    echo() {
+        return 'echo';
+    }
+}
+```
+
+Consuming the provider can be done either by using the `Inject()` decorator factory in a class, or getting it from the IoC container. For every dependable it shares a singleton instance.
 
 <h3 id="api.inject">Inject()</h3>
 
@@ -239,15 +245,25 @@ Class accessor field decorator factory. Injects a value from the IoC container t
 Usage:
 
 ```ts
-@Injectable
+@Injectable()
 class SomeClass {
     @Inject(EchoService) accessor echoService: EchoService;
 }
 ```
 
+**Notes**: the host class does NOT have to be part of the IoC container.
+
 <h3 id="api.verbs">HTTP Verbs</h3>
 
-Decorates the controller endpoint's meta object with optional `path` prefix and `method` values as well as `action`. The host class must be decorated with `@Controller()`.
+Registers the host controller's decorated method in the routes object.
+
+The decorator factory adds the following properties to the route object:
+
+-   path (optional)
+-   method
+-   actionName
+
+The host class must be decorated with `@Controller()`.
 
 #### Get()
 
@@ -352,11 +368,11 @@ export class DogController {
 }
 ```
 
-`EnsureAuthenticated` will be applied to every endpoint this controller registers, while `RequireRole` will be only applied to endpoint defined by the `add()` function.
+`EnsureAuthenticated` will be applied to every endpoint this controller registers, while `RequireRole` will be only applied to `add()`.
 
 #### What is a middleware?
 
-A middleware is a traditional express middleware, except, that you have to write middleware factories as the route meta object will be available for the middleware.
+A middleware is a traditional express-like middleware, except, that you have to write middleware factories as the route meta object will be available for the middleware.
 
 Example:
 
@@ -372,8 +388,8 @@ const RequireRole = (requiredRole: string) => (route: Route) => (req: Request, r
 
 In this example we didn't use the `route` object for anything, but it is possible to implement the require role middleware different.
 
-1. we can create a custom decorator factory to decorate the meta object with a require role
-2. then write a middleware to validate the meta object (= route object) against the access token
+1. we can create a custom decorator factory to decorate the route object with a role property
+2. then write a middleware to validate the route object against the role info from an access token
 
 Example:
 
@@ -445,11 +461,25 @@ export class DogController {
 }
 ```
 
-Decorating the underlying `Route` object for an endpoint let's you extend your app's functionality. Middlewares can interact with the route object. For example, you can create a decorator factory to define the request schema then create a middleware which validates it. The schema validator middleware could be applied to the controller so that every endpoint can have schema validation if the route object contains a schema object.
+Decorating the underlying `Route` object for an endpoint let's you extend your app's functionality. Middlewares can interact with the route object. For example, you can create a decorator factory to define the request schema then create a middleware which validates it. The schema validator middleware could be applied to the controller so that every endpoint might have schema validation if the route object contains a schema object.
 
 <h2 id="container">Dependency Injection</h2>
 
 ### Container
+
+There is a "global" Inversion of Control (IoC) container and you can access it as
+
+```ts
+import { container } from 'wapidi';
+```
+
+You give the container a token, a so-called injection token, and in exchange you get back a provider.
+
+The provider can be an instance, a singleton, a factory function or an arbitrary value.
+
+The `Inject()` class-method decorator factory attempts to inject a provider from the IoC container to the class but first, you have to register the provider to the container.
+
+Likewise, you can access providers directly from the container with `container.get()`.
 
 Usage:
 
@@ -487,7 +517,58 @@ export const initialize = () => {
 };
 ```
 
-### register()
+<h3 id="container.injectiontoken">InjectionToken()</h3>
+
+When registering a provider to the container you have to provide a unique token which identifies the provider.
+
+The injection token can be one of 3 things:
+
+1. a constructor type, that is, a class or function which is instantiable
+2. a string
+3. or an `InjectionToken` instance
+
+```ts
+export type Instantiable<T = any> = {
+    new (...args: any[]): T;
+};
+
+export type InjectionTokenType = string | InjectionToken;
+```
+
+Examples:
+
+1. constructor type
+
+```ts
+container.register({
+    provide: SomeClass, // SomeClass is an ES6 class
+});
+```
+
+2. string
+
+```ts
+container.register({
+    provide: 'env',
+    useValue: 'development',
+});
+```
+
+3. InjectionToken instance
+
+Every instance of the `InjectionToken(description?)` class is guaranteed to provide a unique injection token to use. You can provide a description which will be used in error messages and debugging.
+
+```ts
+const LOGGER = new InjectionToken('logger');
+container.register({
+    provide: LOGGER,
+    useClass: Logger,
+});
+```
+
+<h3 id="container.register">register()</h3>
+
+Registers a provider to the container.
 
 Usage:
 
@@ -500,11 +581,30 @@ container.register({
     useClass: UserService
 });
 
+export type ClassProviderConfig = {
+    provide: Instantiable | InjectionTokenType;
+    useClass: Instantiable;
+};
+
+/// class shorthand
+container.register({
+    provide: UserService
+});
+
+export type ClassProviderShorthandConfig = {
+    provide: Instantiable;
+};
+
 /// singleton
 container.register({
     provide: DBHelper,
     useSingleton: DBHelper,
 });
+
+export type SingletonProviderConfig = {
+    provide: Instantiable | InjectionTokenType;
+    useSingleton: Instantiable;
+};
 
 /// factory
 container.register({
@@ -512,15 +612,27 @@ container.register({
     useFactory: (container) => Logger,
 });
 
+export type FactoryProviderConfig = {
+    provide: InjectionTokenType;
+    useFactory: (container: Container) => any;
+};
+
 /// value
 const CONFIG = new InjectionToken('application config');
 container.register({
     provide: CONFIG,
     useValue: { ... }
 });
+
+export type ValueProviderConfig = {
+    provide: InjectionTokenType;
+    useValue: any;
+};
 ```
 
-### setup()
+<h3 id="container.setup">setup()</h3>
+
+Batch registration of providers on the container.
 
 Usage:
 
@@ -548,13 +660,57 @@ container.setup([
 ]);
 ```
 
-### get()
+<h3 id="container.get">get()</h3>
+
+Get a provider from the container in exchange for an injection token.
 
 Usage:
 
 ```ts
 import { container } from 'wapidi';
-container.get(CONFIG);
+
+container.get<ConfigType>(CONFIG);
+```
+
+<h3 id="container.spawn">spawn()</h3>
+
+Spawns a new child container. A child container behaves similarly than the parent container except decorators will
+register providers **only** on the global container and not on children.
+
+Usage:
+
+```ts
+const childContainer = container.spawn();
+
+childContainer.register(...);
+childContainer.get(...);
+// ...
+```
+
+<h3 id="container.dispose">dispose()</h3>
+
+Disposes the container and all of it's children.
+
+<h2 id="server">Server</h3>
+
+<h3 id="server.bind">bind()</h3>
+
+Binds controller endpoints to an express instance. Similar to how one would bind an express Router instance to an express instance.
+
+**Note**: unlike any other function, you have to import this from `wapidi/server`. This ensures that one can use `wapidi` without express. See the <a href="#no-express">Not using express?</a> section.
+
+Usage:
+
+```ts
+import express from 'express';
+import { bind } from 'wapidi/server';
+import { CatController } from './CatController';
+import { DogController } from './DogController';
+
+const app = express();
+
+app.use('/api', bind(CatController));
+app.use(bind(DogController));
 ```
 
 <h2 id="route">Route</h2>
@@ -620,3 +776,15 @@ The `wapidi/server` module references express, so you can safely use `wapidi` wi
 For example, the [examples/without-express](https://github.com/jim-y/wapidi/tree/main/examples/without-express) example shows how one could use wapidi using vanilla node `http(s).createServer` utilisng the `getRoutesMeta()` helper function.
 
 This example **doesn't** have `express` installed as dependency.
+
+<h3 id="no-express.routes">getRoutesMeta()</h3>
+
+If you don't want to use `express` you still can use the Decorator API and the dependency injector. You still want to access the routes what the controllers generate. For such cases you can use the `getRoutesMeta()` helper function to access the generated routes.
+
+Usage:
+
+```ts
+import { getRoutesMeta } from 'wapidi';
+
+const routes = getRoutesMeta(Ctrl); // Ctrl is a class decorated with @Controller()
+```
