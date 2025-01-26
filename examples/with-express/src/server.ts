@@ -1,5 +1,6 @@
 import express from 'express';
-import { container, bind } from 'wapidi';
+import { container } from 'wapidi/container';
+import { bind } from 'wapidi/server';
 import { CatController } from './cats/CatController';
 import bodyParser from 'body-parser';
 import * as db from './database';

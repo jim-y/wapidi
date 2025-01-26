@@ -1,5 +1,5 @@
 import { ConfigurationError } from './errors';
-import InjectionToken from './InjectionToken';
+import { InjectionToken } from './InjectionToken';
 import {
     isClassProviderConfig,
     isClassProviderShorthandConfig,

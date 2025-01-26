@@ -1,4 +1,4 @@
-import InjectionToken from './InjectionToken';
+import { InjectionToken } from './InjectionToken';
 
 type ClassProvider = Instantiable;
 type ConstantProvider = any;

@@ -1,4 +1,4 @@
-export default class InjectionToken {
+export class InjectionToken {
     token = Symbol();
     constructor(public description?: string) {}
 }

@@ -2,8 +2,16 @@
     "name": "wapidi",
     "description": "A lightweight web api framework with depenedency injection for Typescript and express.js projects",
     "version": "0.5.0",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "exports": {
+        ".": "./dist/index.js",
+        "./container": "./dist/container.js",
+        "./decorators": "./dist/decorators.js",
+        "./server": "./dist/server.js",
+        "./InjectionToken": "./dist/InjectionToken.js",
+        "./errors": "./dist/errors.js",
+        "./types": "./dist/types.js"
+    },
+    "types": "./dist/index.d.ts",
     "files": [
         "/dist"
     ],
@@ -43,5 +51,10 @@
     "peerDependencies": {
         "express": "^4.21.2",
         "typescript": "^5.7.3"
+    },
+    "peerDependenciesMeta": {
+        "express": {
+            "optional": true
+        }
     }
 }

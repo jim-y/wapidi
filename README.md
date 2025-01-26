@@ -3,6 +3,8 @@
 A lightweight web api framework with dependency injection for Typescript and express projects.
 
 -   <a href="#installation">Installation</a>
+-   <a href="#usage">Usage</a>
+    -   <a href="#no-express">Not using express?</a>
 -   <a href="#philosophy">Philosophy</a>
 -   <a href="#api">API</a>
     -   <a href="#api.controller">Controller()</a>
@@ -25,7 +27,7 @@ npm install --save wapidi
 
 Wapidi relies on new typescript features like the stage 3 decorators introduced in typescript 5.0 and the decorator metadata feature introduced in version 5.2. This means you should at least be on version 5.2 of typescript.
 
-`express` and `typescript` are peer-dependencies but other than these two there are no other deps so wapadi is extremely lightweight.
+`express` and `typescript` are peer-dependencies (express being optional) but other than these two there are no other deps so wapadi is extremely lightweight.
 
 Enable these flags in your tsconfig.json file to support the decorator metadata feature as suggested by the typescript docs [https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata)
 
@@ -37,6 +39,32 @@ Enable these flags in your tsconfig.json file to support the decorator metadata 
     "strictPropertyInitialization": false
 }
 ```
+
+<h2 id="usage">Usage</h2>
+
+You can import all `wapidi` api from the main module
+
+```ts
+import { container, bind, WapidiError } from 'wapidi';
+```
+
+or you can import from sub-modules. Importing from sub-modules might help your bundler (if any) with tree-shaking
+
+```ts
+import { container } from 'wapidi/container';
+import { WapidiError } from 'wapidi/errors';
+import type { Container } from 'wapidi/types';
+```
+
+<h3 id="no-express">Not using express?</h2>
+
+If you don't use `express` but still want to use `wapidi` you can install `wapidi` by omitting express as
+
+```bash
+npm install wapidi --omit optional
+```
+
+then, you should import from sub-modules and make sure to **not** import from `wapidi/server`. Only this sub-module references `express` and only this provides the express helpers.
 
 <h2 id="philosophy">Philosophy</h2>
 

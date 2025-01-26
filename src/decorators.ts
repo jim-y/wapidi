@@ -1,4 +1,6 @@
-import { container, DecoratorError, InjectionToken, WapidiError } from '.';
+import { container } from './container';
+import { WapidiError, DecoratorError } from './errors';
+import { InjectionToken } from './InjectionToken';
 import { getRoute, getRoutes, httpMethodDecoratorFactory } from './helpers';
 import type { BaseRoute, InjectionTokenType, Instantiable } from './types';
 

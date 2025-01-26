@@ -1,5 +1,5 @@
 import { generateInjectionToken, isClassLike, isString, isFunction } from './helpers';
-import InjectionToken from './InjectionToken';
+import { InjectionToken } from './InjectionToken';
 import {
     isClassProviderConfig,
     isClassProviderShorthandConfig,
@@ -10,7 +10,7 @@ import {
 import { ConfigurationError, ContainerError, WapidiError } from './errors';
 import type { Config, InjectionTokenType, Instantiable, Container, Registry, Entry } from './types';
 
-export class Store implements Container {
+class Store implements Container {
     id: Symbol = Symbol();
 
     #registry: Registry = new Map<Symbol, Entry>();
@@ -103,7 +103,7 @@ export class Store implements Container {
                 token = Symbol.for(injectionToken);
                 friendlyName = injectionToken;
             } else {
-                throw new ContainerError('Invalid injectonToken type is provided for `container.get()`');
+                throw new ContainerError(`Invalid injectonToken type is provided for container.get(${friendlyName})`);
             }
 
             const entry = this.#registry.get(token);
@@ -146,3 +146,5 @@ export class Store implements Container {
         }
     }
 }
+
+export const container: Container = new Store();

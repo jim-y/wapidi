@@ -1,5 +1,5 @@
 import express from 'express';
-import { container } from '.';
+import { container } from './container';
 import { join } from 'path/posix';
 
 type Route = {
