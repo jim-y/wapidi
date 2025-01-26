@@ -1,6 +1,6 @@
 # WAPIDI
 
-A lightweight web api framework with dependency injection for Typescript and express (or other) projects.
+A lightweight web api framework with dependency injection for Typescript projects.
 
 -   <a href="#installation">Installation</a>
 -   <a href="#usage">Usage</a>
@@ -29,17 +29,23 @@ A lightweight web api framework with dependency injection for Typescript and exp
 
 <h2 id="installation">Installation</h2>
 
-With npm:
+With npm (using express):
 
 ```bash
 npm install --save wapidi
+```
+
+With npm (not using express)
+
+```bash
+npm install --save wapidi --omit=optional
 ```
 
 Wapidi relies on new typescript features like the stage 3 decorators introduced in typescript 5.0 and the decorator metadata feature introduced in version 5.2. This means you should at least be on version 5.2 of typescript.
 
 `express` and `typescript` are peer-dependencies (`express` being optional, see <a href="#no-express">Not using express?</a> section) but other than these two there are no other deps so wapadi is extremely lightweight.
 
-Enable these flags in your tsconfig.json file to support the decorator metadata feature as suggested by the typescript docs [https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata)
+Enable these flags in your tsconfig.json file to support the decorator metadata feature as suggested by the [typescript docs](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata).
 
 ```json
 {
@@ -85,26 +91,22 @@ It enforces using controllers for managing endpoints. The controllers might inje
 
 In typescript there are 2 decorator implementations:
 
-1. Experimental decorators [https://www.typescriptlang.org/docs/handbook/decorators.html#handbook-content](https://www.typescriptlang.org/docs/handbook/decorators.html#handbook-content)
-2. ECMAScript decorators [https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators](https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators)
+1. [Experimental decorators](https://www.typescriptlang.org/docs/handbook/decorators.html#handbook-content)
+2. [ECMAScript decorators](https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators)
 
 The former is available for a long time in typescript, and other dependency injection implementations rely on them.
 
-The latter implementation was "recently" (March 16th, 2023) added in Typescript 5.0 and it doesn't rely on the `reflect-metadata` package and it implements [https://github.com/tc39/proposal-decorators](https://github.com/tc39/proposal-decorators).
+The latter implementation was "recently" (March 16th, 2023) added in Typescript 5.0 and it doesn't rely on `reflect-metadata` and it implements [tc39/proposal-decorators](https://github.com/tc39/proposal-decorators).
 
-There are certain limitations though. Maybe the most important which you should be aware of, is that the stage: 3 proposal doesn't add support for class constructor parameter decorators. There is a stage: 1 proposal for it: [https://github.com/tc39/proposal-class-method-parameter-decorators](https://github.com/tc39/proposal-class-method-parameter-decorators).
-
-This means, that in this package, by the limitations of the typescript implementation and the tc39 proposal, we do field injections, or even more precisely auto-accessor field injections:
+There are certain limitations though. Maybe the most important which you should be aware of, is that the stage: 3 proposal doesn't add support for class constructor parameter decorators. This means, that in this package we do field injections, or even more precisely auto-accessor field injections:
 
 ```ts
 /// Instead of
-
 class Ctrl {
     constructor(@Inject(DB) private db: Database) {}
 }
 
-/// we do
-
+/// We do
 class Ctrl {
     @Inject(DB) accessor #db: Database;
 }
@@ -112,8 +114,7 @@ class Ctrl {
 
 ### Example
 
-CatController.ts
-
+_CatController.ts_
 ```ts
 @Controller('cat')
 class CatController {
@@ -131,8 +132,7 @@ class CatController {
 }
 ```
 
-CatService.ts
-
+_CatService.ts_
 ```ts
 @Injectable()
 export class CatService {
@@ -148,9 +148,9 @@ export class CatService {
 }
 ```
 
-<h2 id="api">API</h2>
+<h2 id="api">Decorator API</h2>
 
-<h3 id="api.controller">Controller()</h3>
+<h3 id="api.controller">@Controller()</h3>
 
 Class decorator factory. Can be used on a class with a path prefix as parameter. Can be used to construct endpoints under a similar domain.
 
@@ -184,7 +184,7 @@ Then your endpoint is reachable
 GET http://localhost:3000/api/v1/cat HTTP/1.1
 ```
 
-<h3 id="api.injectable">Injectable</h3>
+<h3 id="api.injectable">@Injectable()</h3>
 
 Class decorator factory. Marks a class as injectable by dependency injection.
 
@@ -219,7 +219,7 @@ async function EnsureAuthenticated(req, res, next) {
 }
 ```
 
-<h3 id="api.singleton">Singleton</h3>
+<h3 id="api.singleton">@Singleton()</h3>
 
 Class decorator factory. Marks a class as injectable by dependency injection.
 
@@ -238,7 +238,7 @@ export class EchoService {
 
 Consuming the provider can be done either by using the `Inject()` decorator factory in a class, or getting it from the IoC container. For every dependable it shares a singleton instance.
 
-<h3 id="api.inject">Inject()</h3>
+<h3 id="api.inject">@Inject()</h3>
 
 Class accessor field decorator factory. Injects a value from the IoC container to the field.
 
@@ -265,7 +265,7 @@ The decorator factory adds the following properties to the route object:
 
 The host class must be decorated with `@Controller()`.
 
-#### Get()
+### @Get()
 
 Usage:
 
@@ -281,7 +281,7 @@ class CatController {
 }
 ```
 
-#### Post()
+### @Post()
 
 Usage:
 
@@ -297,7 +297,7 @@ class CatController {
 }
 ```
 
-#### Put()
+### @Put()
 
 Usage:
 
@@ -313,7 +313,7 @@ class CatController {
 }
 ```
 
-#### Patch()
+### @Patch()
 
 Usage:
 
@@ -329,7 +329,7 @@ class CatController {
 }
 ```
 
-#### Delete()
+### @Delete()
 
 Usage:
 
@@ -345,7 +345,7 @@ class CatController {
 }
 ```
 
-<h3 id="api.middlewares">Middlewares</h3>
+<h3 id="api.middlewares">@Middlewares()</h3>
 
 Class or class method decorator factory. Applies middlewares to certain endpoints on a controller. When applied as a class decorator factory then every endpoint on the controller gets the middleware, otherwise only the endpoint on which it was applied gets it.
 
@@ -463,9 +463,9 @@ export class DogController {
 
 Decorating the underlying `Route` object for an endpoint let's you extend your app's functionality. Middlewares can interact with the route object. For example, you can create a decorator factory to define the request schema then create a middleware which validates it. The schema validator middleware could be applied to the controller so that every endpoint might have schema validation if the route object contains a schema object.
 
-<h2 id="container">Dependency Injection</h2>
+<h2 id="container">Container API</h2>
 
-### Container
+### container
 
 There is a "global" Inversion of Control (IoC) container and you can access it as
 
@@ -537,7 +537,7 @@ export type InjectionTokenType = string | InjectionToken;
 
 Examples:
 
-1. constructor type
+#### constructor type
 
 ```ts
 container.register({
@@ -545,7 +545,7 @@ container.register({
 });
 ```
 
-2. string
+#### string
 
 ```ts
 container.register({
@@ -554,7 +554,7 @@ container.register({
 });
 ```
 
-3. InjectionToken instance
+#### InjectionToken
 
 Every instance of the `InjectionToken(description?)` class is guaranteed to provide a unique injection token to use. You can provide a description which will be used in error messages and debugging.
 
@@ -691,7 +691,7 @@ childContainer.get(...);
 
 Disposes the container and all of it's children.
 
-<h2 id="server">Server</h3>
+<h2 id="server">Server API</h3>
 
 <h3 id="server.bind">bind()</h3>
 
