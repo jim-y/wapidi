@@ -13,6 +13,7 @@ A lightweight web api framework with dependency injection for Typescript project
     -   <a href="#api.verbs">HTTP Verbs</a>
     -   <a href="#api.middlewares">@Middlewares()</a>
     -   <a href="#api.create.middlewares">createRouteDecorator()</a>
+    -   <a href="#api.module">@Module()</a>
 -   <a href="#container">Container API</a>
     -   <a href="#container.injectiontoken">InjectionToken()</a>
     -   <a href="#container.register">register()</a>
@@ -466,6 +467,25 @@ export class DogController {
 ```
 
 Decorating the underlying `Route` object for an endpoint let's you extend your app's functionality. Middlewares can interact with the route object. For example, you can create a decorator factory to define the request schema then create a middleware which validates it. The schema validator middleware could be applied to the controller so that every endpoint might have schema validation if the route object contains a schema object.
+
+<h3 id="api.module">@Module()</h3>
+
+You can collect controllers under a common module, and bind the module to `expressjs`. A module might have a path prefix and all controllers under the module inherit the prefix.
+
+There is an example express app utilising modules => [with-modules](https://github.com/jim-y/wapidi/tree/main/examples/with-modules).
+
+Usage:
+
+```ts
+import { Module } from 'wapidi';
+
+@Module('api', {
+    controllers: [CatController, DogController],
+})
+class ApiModule {}
+
+app.use(bind(ApiModule));
+```
 
 <h2 id="container">Container API</h2>
 

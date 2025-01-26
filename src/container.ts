@@ -38,9 +38,10 @@ class Store implements Container {
         try {
             if (!config.provide) throw new ConfigurationError('config.provide must be provided');
 
-            const token: Symbol = generateInjectionToken(config);
+            const [token, friendlyToken] = generateInjectionToken(config);
 
-            if (this.#registry.has(token)) throw new ContainerError('The provider is already registered');
+            if (this.#registry.has(token))
+                throw new ContainerError(`The provider (${friendlyToken}) is already registered`);
 
             if (isFactoryProviderConfig(config)) {
                 if (!isFunction(config.useFactory))

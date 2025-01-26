@@ -1,13 +1,54 @@
 import { container } from './container';
 import { WapidiError, DecoratorError } from './errors';
 import { InjectionToken } from './InjectionToken';
-import { getRouteFromContext, getRoutesFromContext, httpMethodDecoratorFactory } from './helpers';
-import type { BaseRoute, InjectionTokenType, Instantiable } from './types';
+import { getRouteFromContext, getRoutesFromContext, getRoutesMeta, httpMethodDecoratorFactory } from './helpers';
+import { isModuleOptions } from './types';
+import type { BaseRoute, InjectionTokenType, Instantiable, ModuleOptions, PreparedRoute } from './types';
 
 // @ts-ignore
 Symbol.metadata ??= Symbol('Symbol.metadata');
 
 const UNINITIALIZED = Symbol('UNINITIALIZED');
+
+export function Module(prefixOrOptions?: string | ModuleOptions, options?: ModuleOptions) {
+    return function (constructor: Instantiable, context: ClassDecoratorContext) {
+        try {
+            if (context.kind !== 'class') {
+                throw new DecoratorError('The @Module decorator factory can only be used on the class');
+            }
+
+            let prefix = '';
+            let moduleOptions: ModuleOptions;
+
+            if (prefixOrOptions != null) {
+                if (isModuleOptions(prefixOrOptions)) {
+                    moduleOptions = prefixOrOptions;
+                } else {
+                    prefix = prefixOrOptions;
+                    moduleOptions = options;
+                }
+            }
+
+            context.metadata[Symbol.for('module')] = true;
+            context.metadata[Symbol.for('prefix')] = prefix;
+            context.metadata[Symbol.for('options')] = moduleOptions;
+
+            Object.defineProperty(context.metadata, Symbol.for('routes'), {
+                get(): PreparedRoute[] {
+                    const routes: PreparedRoute[] = [];
+                    moduleOptions.controllers.forEach(ctrl => {
+                        const ctrlRoutes = getRoutesMeta(ctrl, prefix);
+                        routes.push(...ctrlRoutes);
+                    });
+                    return routes;
+                }
+            })
+            
+        } catch (error) {
+            throw new WapidiError(error);
+        }
+    };
+}
 
 export function Controller(prefix: string = '') {
     return function (constructor: Instantiable, context: ClassDecoratorContext) {

@@ -14,6 +14,14 @@ export interface Container {
     dispose(): void;
 }
 
+export type ModuleOptions = {
+    controllers: Instantiable[];
+};
+
+export function isModuleOptions(obj: string | ModuleOptions): obj is ModuleOptions {
+    return typeof obj !== 'string';
+}
+
 export type Registry = Map<Symbol, Entry>;
 
 export type Entry =
@@ -97,7 +105,7 @@ export type BaseRoute = {
     middlewares: Function[];
 };
 
-export type PreparedRoute<TRoute> = TRoute & {
+export type PreparedRoute<TRoute extends BaseRoute = BaseRoute> = TRoute & {
     preparedPath: string;
     action: Function;
 };

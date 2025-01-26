@@ -16,13 +16,15 @@ export const isClassLike = (obj: unknown): obj is Function =>
 export const isFunction = isClassLike;
 export const isString = (obj: unknown): obj is string => Object.prototype.toString.call(obj) === '[object String]';
 
-export const generateInjectionToken = (config: Config): Symbol => {
+export const generateInjectionToken = (config: Config): [Symbol, string] => {
     let token: Symbol;
+    let friendlyToken: string;
 
     if (isClassProviderShorthandConfig(config)) {
         const provider = config.provide;
         if (isClassLike(provider)) {
             token = Symbol.for(provider.name);
+            friendlyToken = provider.name;
         } else {
             throw new ConfigurationError('config.provide should be class|Function type');
         }
@@ -30,10 +32,13 @@ export const generateInjectionToken = (config: Config): Symbol => {
         const provider = config.provide;
         if (isClassLike(provider)) {
             token = Symbol.for((config.provide as Instantiable).name);
+            friendlyToken = (config.provide as Instantiable).name;
         } else if (provider instanceof InjectionToken) {
             token = provider.token;
+            friendlyToken = provider.description;
         } else if (isString(provider)) {
             token = Symbol.for(provider);
+            friendlyToken = provider;
         } else {
             throw new ConfigurationError('config.provide should be class|Function, InjectionToken or string');
         }
@@ -41,8 +46,10 @@ export const generateInjectionToken = (config: Config): Symbol => {
         const provider = config.provide;
         if (provider instanceof InjectionToken) {
             token = provider.token;
+            friendlyToken = provider.description;
         } else if (isString(provider)) {
             token = Symbol.for(provider);
+            friendlyToken = provider;
         } else {
             throw new ConfigurationError('config.provide should be an InjectionToken or string');
         }
@@ -51,10 +58,13 @@ export const generateInjectionToken = (config: Config): Symbol => {
         const provider = config.provide;
         if (isClassLike(provider)) {
             token = Symbol.for((config.provide as Instantiable).name);
+            friendlyToken = (config.provide as Instantiable).name;
         } else if (provider instanceof InjectionToken) {
             token = provider.token;
+            friendlyToken = provider.description;
         } else if (isString(provider)) {
             token = Symbol.for(provider);
+            friendlyToken = provider;
         } else {
             throw new ConfigurationError('config.provide should be class|Function, InjectionToken or string');
         }
@@ -62,8 +72,10 @@ export const generateInjectionToken = (config: Config): Symbol => {
         const provider = config.provide;
         if (provider instanceof InjectionToken) {
             token = provider.token;
+            friendlyToken = provider.description;
         } else if (isString(provider)) {
             token = Symbol.for(provider);
+            friendlyToken = provider;
         } else {
             throw new ConfigurationError('config.provide should be an InjectionToken or string');
         }
@@ -71,7 +83,7 @@ export const generateInjectionToken = (config: Config): Symbol => {
         throw new ConfigurationError('Unknown configuration type');
     }
 
-    return token;
+    return [token, friendlyToken];
 };
 
 export function httpMethodDecoratorFactory(path: BaseRoute['path'], method: HTTPVerb) {
@@ -125,16 +137,25 @@ export function getRoutesFromContext(context: ClassDecoratorContext): BaseRoute[
     return Object.values(context.metadata[routesSymbol]);
 }
 
-export const getRoutesMeta = <TRoute extends BaseRoute = BaseRoute>(Module: Instantiable): PreparedRoute<TRoute>[] => {
-    const metadata = Module[Symbol.metadata];
+/**
+ * Fetch an array of {PreparedRoute} types
+ * @param Controller Controller class
+ * @param __modulePrefix this is an internal property called by the Module API
+ * @returns
+ */
+export const getRoutesMeta = <TRoute extends BaseRoute = BaseRoute>(
+    Controller: Instantiable,
+    __modulePrefix: string = ''
+): PreparedRoute<TRoute>[] => {
+    const metadata = Controller[Symbol.metadata];
     const controllerPrefix = (metadata[Symbol.for('prefix')] as string) ?? '';
     const routes = metadata[Symbol.for('routes')] as Routes<TRoute>;
     const result = [] as PreparedRoute<TRoute>[];
-    const ctrl = container.get<typeof Module>(Module);
+    const ctrl = container.get<typeof Controller>(Controller);
     for (const route of Object.values(routes)) {
         result.push({
             ...route,
-            preparedPath: join('/', controllerPrefix, route.path),
+            preparedPath: join('/', __modulePrefix, controllerPrefix, route.path),
             action: ctrl[route.actionName].bind(ctrl),
         });
     }
