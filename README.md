@@ -1,6 +1,6 @@
 # WAPIDI
 
-A lightweight web api framework with dependency injection for Typescript projects.
+A lightweight web api framework with dependency injection for Typescript projects with first-class support for [expressjs](https://expressjs.com/).
 
 -   <a href="#installation">Installation</a>
 -   <a href="#usage">Usage</a>
@@ -43,7 +43,7 @@ npm install --save wapidi --omit=optional
 
 Wapidi relies on new typescript features like the stage 3 decorators introduced in typescript 5.0 and the decorator metadata feature introduced in version 5.2. This means you should at least be on version 5.2 of typescript.
 
-`express` and `typescript` are peer-dependencies (`express` being optional, see <a href="#no-express">Not using express?</a> section) but other than these two there are no other deps so wapadi is extremely lightweight.
+`express` and `typescript` are peer-dependencies (`express` being optional, see <a href="#no-express">Not using express?</a> section) but other than these two there are no other deps so `wapidi` is extremely lightweight.
 
 Enable these flags in your tsconfig.json file to support the decorator metadata feature as suggested by the [typescript docs](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata).
 
@@ -96,9 +96,9 @@ In typescript there are 2 decorator implementations:
 
 The former is available for a long time in typescript, and other dependency injection implementations rely on them.
 
-The latter implementation was "recently" (March 16th, 2023) added in Typescript 5.0 and it doesn't rely on `reflect-metadata` and it implements [tc39/proposal-decorators](https://github.com/tc39/proposal-decorators).
+The latter implementation was "recently" (March 16th, 2023) added in Typescript 5.0 and it doesn't rely on `reflect-metadata` and it implements [tc39/proposal-decorators](https://github.com/tc39/proposal-decorators). We are using this implementation in this project.
 
-There are certain limitations though. Maybe the most important which you should be aware of, is that the stage: 3 proposal doesn't add support for class constructor parameter decorators. This means, that in this package we do field injections, or even more precisely auto-accessor field injections:
+There are certain limitations though. The tc39 decorators proposal doesn't add support for constructor parameter decorators. This means, that in this package we use auto-accessor field injections.
 
 ```ts
 /// Instead of
@@ -112,9 +112,12 @@ class Ctrl {
 }
 ```
 
-### Example
+### Basic Example
+
+For more examples, please check the [examples](https://github.com/jim-y/wapidi/tree/main/examples) folder.
 
 _CatController.ts_
+
 ```ts
 @Controller('cat')
 class CatController {
@@ -133,6 +136,7 @@ class CatController {
 ```
 
 _CatService.ts_
+
 ```ts
 @Injectable()
 export class CatService {
