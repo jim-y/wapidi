@@ -1,19 +1,11 @@
 import express from 'express';
 import type { RequestHandler } from 'express';
-import { getRoutesMeta } from './helpers';
+import { getRoutes } from './helpers';
 import { BaseRoute, Instantiable, PreparedRoute } from './types';
 
-export const bind = <TRoute extends BaseRoute = BaseRoute>(Module: Instantiable) => {
+export const bind = <TRoute extends BaseRoute = BaseRoute>(Class: Instantiable) => {
     const router = express.Router();
-    const isModule = Module[Symbol.metadata][Symbol.for('module')];
-
-    let routes: PreparedRoute<TRoute>[] = [];
-
-    if (isModule) {
-        routes = Module[Symbol.metadata][Symbol.for('routes')] as PreparedRoute<TRoute>[];
-    } else {
-        routes = getRoutesMeta<TRoute>(Module);
-    }
+    const routes: PreparedRoute<TRoute>[] = getRoutes<TRoute>(Class);
 
     for (const route of routes) {
         router[route.method](

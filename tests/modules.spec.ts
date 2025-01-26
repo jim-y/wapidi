@@ -1,8 +1,8 @@
-import { suite, test, before, after, beforeEach, afterEach } from 'node:test';
+import { suite, test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert';
 
-import { container, Controller, Get, InjectionToken, Module, WapidiError } from '../dist';
-import type { Container, PreparedRoute } from '../dist';
+import { container, Controller, Get, Module, getRoutes } from '../dist';
+import type { PreparedRoute } from '../dist';
 
 suite('Module API', () => {
     before(() => container.dispose());
@@ -10,6 +10,29 @@ suite('Module API', () => {
 
     suite('@Module()', () => {
         beforeEach(() => container.dispose());
+
+        test('getRoutes() works with a Module', () => {
+            @Controller('cat')
+            class CatCtrl {
+                @Get(':id')
+                get() {}
+            }
+
+            @Controller('dog')
+            class DogCtrl {
+                @Get(':id')
+                get() {}
+            }
+
+            @Module('api', {
+                controllers: [CatCtrl, DogCtrl],
+            })
+            class ApiModule {}
+
+            const routes = getRoutes(ApiModule);
+
+            assert.ok(routes);
+        });
 
         test('@Module() works', () => {
             @Controller('cat')
@@ -29,7 +52,7 @@ suite('Module API', () => {
             })
             class ApiModule {}
 
-            const routes = ApiModule[Symbol.metadata][Symbol.for('routes')] as PreparedRoute[];
+            const routes = getRoutes(ApiModule);
 
             assert.ok(routes);
             assert.ok(Array.isArray(routes));
@@ -58,7 +81,7 @@ suite('Module API', () => {
             })
             class ApiModule {}
 
-            const routes = ApiModule[Symbol.metadata][Symbol.for('routes')] as PreparedRoute[];
+            const routes = getRoutes(ApiModule);
 
             assert.ok(routes);
             assert.ok(Array.isArray(routes));

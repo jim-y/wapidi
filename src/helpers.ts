@@ -8,7 +8,7 @@ import {
     isSingletonProviderConfig,
     isValueProviderConfig,
 } from './types';
-import type { BaseRoute, Config, HTTPVerb, Instantiable, PreparedRoute, Routes } from './types';
+import type { BaseRoute, Config, HTTPVerb, Instantiable, ModuleOptions, PreparedRoute, Routes } from './types';
 import { join } from 'node:path/posix';
 
 export const isClassLike = (obj: unknown): obj is Function =>
@@ -137,20 +137,14 @@ export function getRoutesFromContext(context: ClassDecoratorContext): BaseRoute[
     return Object.values(context.metadata[routesSymbol]);
 }
 
-/**
- * Fetch an array of {PreparedRoute} types
- * @param Controller Controller class
- * @param __modulePrefix this is an internal property called by the Module API
- * @returns
- */
-export const getRoutesMeta = <TRoute extends BaseRoute = BaseRoute>(
+const getRoutesForAController = <TRoute extends BaseRoute = BaseRoute>(
     Controller: Instantiable,
     __modulePrefix: string = ''
 ): PreparedRoute<TRoute>[] => {
     const metadata = Controller[Symbol.metadata];
+    const result = [] as PreparedRoute<TRoute>[];
     const controllerPrefix = (metadata[Symbol.for('prefix')] as string) ?? '';
     const routes = metadata[Symbol.for('routes')] as Routes<TRoute>;
-    const result = [] as PreparedRoute<TRoute>[];
     const ctrl = container.get<typeof Controller>(Controller);
     for (const route of Object.values(routes)) {
         result.push({
@@ -160,4 +154,23 @@ export const getRoutesMeta = <TRoute extends BaseRoute = BaseRoute>(
         });
     }
     return result;
+};
+
+export const getRoutes = <TRoute extends BaseRoute = BaseRoute>(Class: Instantiable): PreparedRoute<TRoute>[] => {
+    const metadata = Class[Symbol.metadata];
+    const isModule = metadata[Symbol.for('module')];
+    const results = [] as PreparedRoute<TRoute>[];
+
+    if (isModule) {
+        const moduleOptions = metadata[Symbol.for('options')] as ModuleOptions;
+        const modulePrefix = metadata[Symbol.for('prefix')] as string;
+        const controllers = moduleOptions.controllers ?? [];
+        for (const ctrl of controllers) {
+            results.push(...getRoutesForAController<TRoute>(ctrl, modulePrefix));
+        }
+    } else {
+        results.push(...getRoutesForAController<TRoute>(Class));
+    }
+
+    return results;
 };

@@ -131,6 +131,8 @@ suite('Decorator API', () => {
             assert.ok(routes);
             assert.deepStrictEqual(expectedRoutes, routes);
         });
+
+        test('getRoutes() works on a controller')
     });
 
     suite('@Injectable()', () => {

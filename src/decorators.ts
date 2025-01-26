@@ -1,7 +1,7 @@
 import { container } from './container';
 import { WapidiError, DecoratorError } from './errors';
 import { InjectionToken } from './InjectionToken';
-import { getRouteFromContext, getRoutesFromContext, getRoutesMeta, httpMethodDecoratorFactory } from './helpers';
+import { getRouteFromContext, getRoutesFromContext, getRoutes, httpMethodDecoratorFactory } from './helpers';
 import { isModuleOptions } from './types';
 import type { BaseRoute, InjectionTokenType, Instantiable, ModuleOptions, PreparedRoute } from './types';
 
@@ -32,18 +32,6 @@ export function Module(prefixOrOptions?: string | ModuleOptions, options?: Modul
             context.metadata[Symbol.for('module')] = true;
             context.metadata[Symbol.for('prefix')] = prefix;
             context.metadata[Symbol.for('options')] = moduleOptions;
-
-            Object.defineProperty(context.metadata, Symbol.for('routes'), {
-                get(): PreparedRoute[] {
-                    const routes: PreparedRoute[] = [];
-                    moduleOptions.controllers.forEach(ctrl => {
-                        const ctrlRoutes = getRoutesMeta(ctrl, prefix);
-                        routes.push(...ctrlRoutes);
-                    });
-                    return routes;
-                }
-            })
-            
         } catch (error) {
             throw new WapidiError(error);
         }

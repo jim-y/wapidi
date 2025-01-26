@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { container, getRoutesMeta } from 'wapidi';
+import { container, getRoutes } from 'wapidi';
 import { CONFIG } from './tokens';
 import { Ctrl } from './controller';
 
@@ -11,7 +11,7 @@ container.register({
 });
 
 const server = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
-    const routes = getRoutesMeta(Ctrl);
+    const routes = getRoutes(Ctrl);
     const exactMatch = routes.find(
         route => route.preparedPath === req.url && route.method.toLocaleLowerCase() === req.method.toLowerCase()
     );

@@ -26,7 +26,7 @@ A lightweight web api framework with dependency injection for Typescript project
 -   <a href="#route">Route</a>
 -   <a href="#examples">Examples</a>
 -   <a href="#no-express">Not using express?</a>
-    -   <a href="no-express.routes">getRoutesMeta()</a>
+    -   <a href="no-express.routes">getRoutes()</a>
 
 <h2 id="installation">Installation</h2>
 
@@ -487,6 +487,13 @@ class ApiModule {}
 app.use(bind(ApiModule));
 ```
 
+You can use modules even without the server-api as <a href="no-express.routes">getRoutes()</a> works on a class
+decorated with `@Module()` as well.
+
+```ts
+
+```
+
 <h2 id="container">Container API</h2>
 
 ### container
@@ -797,18 +804,22 @@ Then, you loose the ability to use our express helpers from `wapidi/server`.
 
 The `wapidi/server` module references express, so you can safely use `wapidi` without installing `express` if you won't reference `wapidi/server` in your codebase.
 
-For example, the [examples/without-express](https://github.com/jim-y/wapidi/tree/main/examples/without-express) example shows how one could use wapidi using vanilla node `http(s).createServer` utilisng the `getRoutesMeta()` helper function.
+For example, the [examples/without-express](https://github.com/jim-y/wapidi/tree/main/examples/without-express) example shows how one could use wapidi using vanilla node `http(s).createServer` utilisng the `getRoutes()` helper function.
 
 This example **doesn't** have `express` installed as dependency.
 
-<h3 id="no-express.routes">getRoutesMeta()</h3>
+<h3 id="no-express.routes">getRoutes()</h3>
 
-If you don't want to use `express` you still can use the Decorator API and the dependency injector. You still want to access the routes what the controllers generate. For such cases you can use the `getRoutesMeta()` helper function to access the generated routes.
+If you don't want to use `express` you can still use the Decorator API and the Container API. In this case you might be still interested in the routes of the controllers/modules. For such cases you can use the `getRoutes()` helper function to access the generated routes.
 
 Usage:
 
 ```ts
-import { getRoutesMeta } from 'wapidi';
+import { getRoutes } from 'wapidi';
 
-const routes = getRoutesMeta(Ctrl); // Ctrl is a class decorated with @Controller()
+const routes = getRoutes(Ctrl); // Ctrl is a class decorated with @Controller()
+
+/// or
+
+const routes = getRoutes(Module); // Module is a class decorated with @Module()
 ```
