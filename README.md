@@ -491,7 +491,42 @@ You can use modules even without the server-api as <a href="no-express.routes">g
 decorated with `@Module()` as well.
 
 ```ts
+@Controller('cat')
+class CatCtrl {
+    @Get(':id')
+    get() {}
+}
 
+@Controller('dog')
+class DogCtrl {
+    @Get(':id')
+    get() {}
+}
+
+@Module('api', {
+    controllers: [CatCtrl, DogCtrl],
+})
+class ApiModule {}
+
+const routes = getRoutes(ApiModule);
+
+// routes:
+// [
+//   {
+//     method: 'get',
+//     path: ':id',
+//     actionName: 'get',
+//     preparedPath: '/api/cat/:id',
+//     action: [Function: bound get]
+//   },
+//   {
+//     method: 'get',
+//     path: ':id',
+//     actionName: 'get',
+//     preparedPath: '/api/dog/:id',
+//     action: [Function: bound get]
+//   }
+// ]
 ```
 
 <h2 id="container">Container API</h2>
