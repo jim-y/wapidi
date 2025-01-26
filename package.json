@@ -1,7 +1,7 @@
 {
     "name": "wapidi",
     "description": "A lightweight web api framework with depenedency injection for Typescript and express.js projects",
-    "version": "0.6.0",
+    "version": "0.6.1",
     "exports": {
         ".": "./dist/index.js",
         "./container": "./dist/container.js",
