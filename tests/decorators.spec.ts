@@ -37,9 +37,9 @@ suite('Decorator API', () => {
         });
 
         test('extending the route meta & createRouteDecorator works', () => {
-            const Version = (version: string) =>
-                createRouteDecorator<{ version: string }>(route => (route.version = version));
-            const Admin = createRouteDecorator<{ role: string }>(route => (route.role = 'admin'));
+            type Route = BaseRoute & { version: string; role: string };
+            const Version = (version: string) => createRouteDecorator<Route>(route => (route.version = version));
+            const Admin = createRouteDecorator<Route>(route => (route.role = 'admin'));
 
             @Controller()
             class Ctrl {
@@ -53,7 +53,7 @@ suite('Decorator API', () => {
                 get: {
                     method: 'get',
                     path: 'resource',
-                    action: 'get',
+                    actionName: 'get',
                     version: '1.0',
                     role: 'admin',
                 },
@@ -102,27 +102,27 @@ suite('Decorator API', () => {
                 get: {
                     method: 'get',
                     path: 'resource',
-                    action: 'get',
+                    actionName: 'get',
                 },
                 post: {
                     method: 'post',
                     path: 'resource',
-                    action: 'post',
+                    actionName: 'post',
                 },
                 delete: {
                     method: 'delete',
                     path: '/:id/dispose',
-                    action: 'delete',
+                    actionName: 'delete',
                 },
                 put: {
                     method: 'put',
                     path: '/:id/replace',
-                    action: 'put',
+                    actionName: 'put',
                 },
                 patch: {
                     method: 'patch',
                     path: '/:id/update',
-                    action: 'patch',
+                    actionName: 'patch',
                 },
             };
 
@@ -335,9 +335,8 @@ suite('Decorator API', () => {
                 }
             };
 
-            const Decorate = createRouteDecorator<{ decoratedProperty: boolean }>(
-                route => (route.decoratedProperty = true)
-            );
+            type Route = BaseRoute & { decoratedProperty: boolean };
+            const Decorate = createRouteDecorator<Route>(route => (route.decoratedProperty = true));
 
             @Controller()
             @Middlewares([MW])
@@ -407,6 +406,50 @@ suite('Decorator API', () => {
             assert.strictEqual(route.middlewares.at(1), B);
             assert.strictEqual(route.middlewares.at(2), C);
             assert.strictEqual(route.middlewares.at(3), D);
+        });
+    });
+
+    suite('Class method decorator order', () => {
+        beforeEach(() => container.dispose());
+
+        test("Method decorator order doesn't matter", () => {
+            type Route = BaseRoute & { version: string; role: string };
+            const Version = (version: string) => createRouteDecorator<Route>(route => (route.version = version));
+            const Admin = createRouteDecorator<Route>(route => (route.role = 'admin'));
+
+            @Controller()
+            class Ctrl {
+                @Get('resource')
+                @Version('1.0')
+                @Admin
+                get() {}
+
+                @Admin
+                @Version('1.0')
+                @Post('resource')
+                post() {}
+            }
+
+            const expectedRoutes = {
+                get: {
+                    method: 'get',
+                    path: 'resource',
+                    actionName: 'get',
+                    version: '1.0',
+                    role: 'admin',
+                },
+                post: {
+                    method: 'post',
+                    path: 'resource',
+                    actionName: 'post',
+                    version: '1.0',
+                    role: 'admin',
+                },
+            };
+
+            const routes = Ctrl[Symbol.metadata][Symbol.for('routes')];
+            assert.ok(routes);
+            assert.deepStrictEqual(expectedRoutes, routes);
         });
     });
 });

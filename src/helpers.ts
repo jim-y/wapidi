@@ -1,3 +1,4 @@
+import { container } from './container';
 import { ConfigurationError } from './errors';
 import { InjectionToken } from './InjectionToken';
 import {
@@ -7,7 +8,8 @@ import {
     isSingletonProviderConfig,
     isValueProviderConfig,
 } from './types';
-import type { BaseRoute, Config, Instantiable } from './types';
+import type { BaseRoute, Config, HTTPVerb, Instantiable, PreparedRoute, Routes } from './types';
+import { join } from 'node:path/posix';
 
 export const isClassLike = (obj: unknown): obj is Function =>
     Object.prototype.toString.call(obj) === '[object Function]';
@@ -72,11 +74,10 @@ export const generateInjectionToken = (config: Config): Symbol => {
     return token;
 };
 
-export function httpMethodDecoratorFactory(path: string, method: string) {
+export function httpMethodDecoratorFactory(path: BaseRoute['path'], method: HTTPVerb) {
     return function (originalMethod: any, context: ClassMethodDecoratorContext) {
         const methodName = context.name;
-        const route = { method, path, action: methodName };
-
+        const route = { method, path, actionName: methodName } as BaseRoute;
         const routesSymbol = Symbol.for('routes');
 
         if (!context.metadata[routesSymbol]) {
@@ -97,7 +98,9 @@ export function httpMethodDecoratorFactory(path: string, method: string) {
     };
 }
 
-export function getRoute<TRoute = BaseRoute>(context: ClassMethodDecoratorContext) {
+export function getRouteFromContext<TRoute extends BaseRoute = BaseRoute>(
+    context: ClassMethodDecoratorContext
+): TRoute {
     const methodName = context.name;
     const routesSymbol = Symbol.for('routes');
 
@@ -112,7 +115,7 @@ export function getRoute<TRoute = BaseRoute>(context: ClassMethodDecoratorContex
     return context.metadata[routesSymbol][methodName];
 }
 
-export function getRoutes(context: ClassDecoratorContext): BaseRoute[] {
+export function getRoutesFromContext(context: ClassDecoratorContext): BaseRoute[] {
     const routesSymbol = Symbol.for('routes');
 
     if (!context.metadata[routesSymbol]) {
@@ -121,3 +124,19 @@ export function getRoutes(context: ClassDecoratorContext): BaseRoute[] {
 
     return Object.values(context.metadata[routesSymbol]);
 }
+
+export const getRoutesMeta = <TRoute extends BaseRoute = BaseRoute>(Module: Instantiable): PreparedRoute<TRoute>[] => {
+    const metadata = Module[Symbol.metadata];
+    const controllerPrefix = (metadata[Symbol.for('prefix')] as string) ?? '';
+    const routes = metadata[Symbol.for('routes')] as Routes<TRoute>;
+    const result = [] as PreparedRoute<TRoute>[];
+    const ctrl = container.get<typeof Module>(Module);
+    for (const route of Object.values(routes)) {
+        result.push({
+            ...route,
+            preparedPath: join('/', controllerPrefix, route.path),
+            action: ctrl[route.actionName].bind(ctrl),
+        });
+    }
+    return result;
+};

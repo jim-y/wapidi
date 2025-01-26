@@ -1,10 +1,9 @@
 # WAPIDI
 
-A lightweight web api framework with dependency injection for Typescript and express projects.
+A lightweight web api framework with dependency injection for Typescript and express (or other) projects.
 
 -   <a href="#installation">Installation</a>
 -   <a href="#usage">Usage</a>
-    -   <a href="#no-express">Not using express?</a>
 -   <a href="#philosophy">Philosophy</a>
 -   <a href="#api">API</a>
     -   <a href="#api.controller">Controller()</a>
@@ -15,7 +14,9 @@ A lightweight web api framework with dependency injection for Typescript and exp
     -   <a href="#api.middlewares">Middlewares()</a>
     -   <a href="#api.create.middlewares">createRouteDecorator()</a>
 -   <a href="#container">Dependency Injection</a>
+-   <a href="#route">Route</a>
 -   <a href="#examples">Examples</a>
+-   <a href="#no-express">Not using express?</a>
 
 <h2 id="installation">Installation</h2>
 
@@ -27,7 +28,7 @@ npm install --save wapidi
 
 Wapidi relies on new typescript features like the stage 3 decorators introduced in typescript 5.0 and the decorator metadata feature introduced in version 5.2. This means you should at least be on version 5.2 of typescript.
 
-`express` and `typescript` are peer-dependencies (express being optional) but other than these two there are no other deps so wapadi is extremely lightweight.
+`express` and `typescript` are peer-dependencies (`express` being optional, see <a href="#no-express">Not using express?</a> section) but other than these two there are no other deps so wapadi is extremely lightweight.
 
 Enable these flags in your tsconfig.json file to support the decorator metadata feature as suggested by the typescript docs [https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata)
 
@@ -45,7 +46,7 @@ Enable these flags in your tsconfig.json file to support the decorator metadata 
 You can import all `wapidi` api from the main module
 
 ```ts
-import { container, bind, WapidiError } from 'wapidi';
+import { container, Controller, WapidiError } from 'wapidi';
 ```
 
 or you can import from sub-modules. Importing from sub-modules might help your bundler (if any) with tree-shaking
@@ -56,21 +57,22 @@ import { WapidiError } from 'wapidi/errors';
 import type { Container } from 'wapidi/types';
 ```
 
-<h3 id="no-express">Not using express?</h2>
-
-If you don't use `express` but still want to use `wapidi` you can install `wapidi` by omitting express as
-
-```bash
-npm install wapidi --omit=optional
-```
-
-then, you should import from sub-modules and make sure to **not** import from `wapidi/server`. Only this sub-module references `express` and only this provides the express helpers.
-
 <h2 id="philosophy">Philosophy</h2>
 
 This lightweight web api framework is opinionated but it helps managing your api routes with decorators and dependency injection.
 
-It enforces using controllers for managing endpoints. The controllers might inject services, and services handle the business logic. Each endpoint is represented by a "hidden" meta object. You can decorate this meta object with decorators and consume the meta with middlewares.
+### What does it bring to the table?
+
+-   It uses dependency injection relying on stage:3 decorators implemented by typescript, as opposed to legacy decorators
+-   It provides a very lightweight solution of structuring your api endpoints under controller domains and business logic into reusable services
+-   Integrates with `express`-like frameworks, but offers solutions outside of `express`
+
+### What is it NOT?
+
+-   It is NOT a fully-fledged node framework which tries to solve everything
+-   It tries to solve one (two) problems but aims to solve those well
+
+It enforces using controllers for managing endpoints. The controllers might inject services, and services handle the business logic. Each endpoint is represented by a "hidden" route object. You can decorate this route object with decorators and consume it with middlewares.
 
 In typescript there are 2 decorator implementations:
 
@@ -81,11 +83,9 @@ The former is available for a long time in typescript, and other DI implementati
 
 The latter implementation was "recently" (March 16th, 2023) added in Typescript 5.0 and it doesn't rely on the `reflect-metadata` package and it implements [https://github.com/tc39/proposal-decorators](https://github.com/tc39/proposal-decorators).
 
-I think it's a safer bet to rely on the ECMAScript standard as it's more likely to be added to javascript later.
-
 There are certain limitations though. Maybe the most important which you should be aware of, is that the stage: 3 proposal doesn't add support for class constructor parameter decorators. There is a stage: 1 proposal for it: [https://github.com/tc39/proposal-class-method-parameter-decorators](https://github.com/tc39/proposal-class-method-parameter-decorators).
 
-This means, that in this package, by the limitations of the typescript implementation and the tc39 proposal, we do field injections, or even more precisely accessor field injections:
+This means, that in this package, by the limitations of the typescript implementation and the tc39 proposal, we do field injections, or even more precisely auto-accessor field injections:
 
 ```ts
 /// Instead of
@@ -97,7 +97,7 @@ class Ctrl {
 /// we do
 
 class Ctrl {
-    @Inject(DB) private accessor db: Database;
+    @Inject(DB) accessor #db: Database;
 }
 ```
 
@@ -108,16 +108,16 @@ CatController.ts
 ```ts
 @Controller('cat')
 class CatController {
-    @Inject(CatService) accessor catService: CatService;
+    @Inject(CatService) accessor #catService: CatService;
 
     @Get()
     async getAll(req: Request, res: Response) {
-        res.json(await this.catService.getAllCats());
+        res.json(await this.#catService.getAllCats());
     }
 
     @Get(':name')
     async get(req: Request, res: Response) {
-        res.json(await this.catService.getByName(req.params.name));
+        res.json(await this.#catService.getByName(req.params.name));
     }
 }
 ```
@@ -127,7 +127,7 @@ CatService.ts
 ```ts
 @Injectable
 export class CatService {
-    @Inject(DB) accessor db: Database;
+    @Inject(DB) accessor #db: Database;
 
     getAll() {
         // fetch cats from db
@@ -161,7 +161,7 @@ export class CatController {
 /// In your main server.ts file:
 
 import express from 'express';
-import { bind } from 'wapidi';
+import { bind } from 'wapidi/server';
 import { CatController } from './CatController';
 
 const app = express();
@@ -181,11 +181,13 @@ GET http://localhost:3000/api/v1/cat HTTP/1.1
 
 Binds controller endpoints to an express instance. Similar to how one would bind an express Router instance to an express instance.
 
+**Note**: unlike any other function, you have to import this from `wapidi/server`. This ensures that one can use `wapidi` without express. See the <a href="#no-express">Not using express?</a> section.
+
 Usage:
 
 ```ts
 import express from 'express';
-import { bind } from 'wapidi';
+import { bind } from 'wapidi/server';
 import { CatController } from './CatController';
 import { DogController } from './DogController';
 
@@ -557,16 +559,64 @@ container.get(CONFIG);
 
 <h2 id="route">Route</h2>
 
+In `wapidi` every endpoint of your api is represented by a `BaseRoute` object.
+
 ```ts
 export type HTTPVerb = 'get' | 'post' | 'patch' | 'put' | 'delete';
 export type BaseRoute = {
     method: HTTPVerb;
     path: string;
-    action: string;
+    actionName: string;
     middlewares: Function[];
 };
 ```
 
+When you create a route decorator | decorator factory you extend this route object with new properties. You can add new properties for the route object with <a href="#api.create.middlewares">createRouteDecorator()</a>
+
+To ensure type correctness in `createRouteDecorator()` you can provide a generic type parameter which extends `BaseRoute`. That is, if your decorator factory would add a new route property **_requiredRole_**, then you should create a new type
+
+```ts
+import type { BaseRoute } from 'wapidi/types';
+
+export const Route = BaseRoute & {
+    requiredRole: string;
+}
+```
+
+then provide this new type as a generic type parameter for `createRouteDecorator()`:
+
+```ts
+const RequiredRole = (requiredRole: string) =>
+    createRouteDecorator<Route>(route => {
+        // route.requiredRole is type safe here because of `Route`
+        route.requiredRole = requiredRole;
+    });
+
+/// then use it as a decorator factory
+
+@Get()
+@RequiredRole('admin')
+get() {}
+```
+
+Extending the route object is useful because your middlewares can access the endpoint's route object and validate by them.
+
 <h2 id="examples">Examples</h2>
 
 Please check the [examples](https://github.com/jim-y/wapidi/tree/main/examples) folder for examples
+
+<h2 id="no-express">Not using express?</h2>
+
+If you don't use `express` but still want to use `wapidi` you can install `wapidi` by omitting installing `express` as
+
+```bash
+npm install wapidi --omit=optional
+```
+
+Then, you loose the ability to use our express helpers from `wapidi/server`.
+
+The `wapidi/server` module references express, so you can safely use `wapidi` without installing `express` if you won't reference `wapidi/server` in your codebase.
+
+For example, the [examples/without-express](https://github.com/jim-y/wapidi/tree/main/examples/without-express) example shows how one could use wapidi using vanilla node `http(s).createServer` utilisng the `getRoutesMeta()` helper function.
+
+This example **doesn't** have `express` installed as dependency.

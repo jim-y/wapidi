@@ -1,26 +1,18 @@
 import express from 'express';
-import { container } from './container';
-import { join } from 'path/posix';
+import type { RequestHandler } from 'express';
+import { getRoutesMeta } from './helpers';
+import { BaseRoute, Instantiable } from './types';
 
-type Route = {
-    method: string;
-    path: string;
-    action: string;
-    middlewares: Function[];
-};
-
-type Routes = Record<string, Route>;
-
-export const bind = (module: any) => {
-    const meta = module[Symbol.metadata];
+export const bind = <TRoute extends BaseRoute = BaseRoute>(Module: Instantiable) => {
     const router = express.Router();
+    const routes = getRoutesMeta<TRoute>(Module);
 
-    const routes: Routes = meta[Symbol.for('routes')];
-    const controller = container.get(module);
-
-    for (const route of Object.values(routes)) {
-        const middlewares = [...(route.middlewares ?? []), controller[route.action].bind(controller)];
-        router[route.method](join('/', meta[Symbol.for('prefix')], route.path), ...middlewares);
+    for (const route of routes) {
+        router[route.method](
+            route.preparedPath,
+            ...((route.middlewares ?? []) as RequestHandler[]),
+            route.action as RequestHandler
+        );
     }
 
     return router;

@@ -88,14 +88,21 @@ export type Config =
     | FactoryProviderConfig
     | ValueProviderConfig;
 
-type HTTPVerb = 'get' | 'post' | 'patch' | 'put' | 'delete';
+export type HTTPVerb = 'get' | 'post' | 'patch' | 'put' | 'delete';
 
 export type BaseRoute = {
     method: HTTPVerb;
     path: string;
-    action: string;
+    actionName: string;
     middlewares: Function[];
 };
+
+export type PreparedRoute<TRoute> = TRoute & {
+    preparedPath: string;
+    action: Function;
+};
+
+export type Routes<TRoute = BaseRoute> = Record<string, TRoute>;
 
 export function isClassMethodDecoratorContext(context: any): context is ClassMethodDecoratorContext {
     return (context as ClassMethodDecoratorContext).kind === 'method';

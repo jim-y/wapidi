@@ -1,7 +1,7 @@
 import { container } from './container';
 import { WapidiError, DecoratorError } from './errors';
 import { InjectionToken } from './InjectionToken';
-import { getRoute, getRoutes, httpMethodDecoratorFactory } from './helpers';
+import { getRouteFromContext, getRoutesFromContext, httpMethodDecoratorFactory } from './helpers';
 import type { BaseRoute, InjectionTokenType, Instantiable } from './types';
 
 // @ts-ignore
@@ -127,7 +127,7 @@ export function Middlewares(middlewareFunctions: Function[]) {
     return function (originalMethodOrConstructor: any, context: ClassDecoratorContext | ClassMethodDecoratorContext) {
         try {
             if (context.kind === 'class') {
-                const routes = getRoutes(context);
+                const routes = getRoutesFromContext(context);
                 for (const route of routes) {
                     if (!route.middlewares) route.middlewares = [];
                     for (let index = middlewareFunctions.length - 1; index >= 0; index--) {
@@ -135,7 +135,7 @@ export function Middlewares(middlewareFunctions: Function[]) {
                     }
                 }
             } else if (context.kind === 'method') {
-                const route = getRoute(context);
+                const route = getRouteFromContext(context);
                 if (!route.middlewares) route.middlewares = [];
                 for (const middleware of middlewareFunctions) {
                     route.middlewares.push(middleware(route));
@@ -156,13 +156,13 @@ export function Middlewares(middlewareFunctions: Function[]) {
 //          Util
 // =========================
 
-export function createRouteDecorator<ExtensionType>(cb: (route: BaseRoute & ExtensionType) => any) {
+export function createRouteDecorator<TRoute extends BaseRoute = BaseRoute>(cb: (route: TRoute) => any) {
     return function (originalMethod: any, context: ClassMethodDecoratorContext) {
         try {
             if (context.kind !== 'method') {
                 throw new DecoratorError('A route decorator | decorator factory can only be used on a class method');
             }
-            cb(getRoute<BaseRoute & ExtensionType>(context));
+            cb(getRouteFromContext<TRoute>(context));
             return originalMethod;
         } catch (error) {
             throw new WapidiError(error);
