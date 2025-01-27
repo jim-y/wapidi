@@ -12,7 +12,7 @@ A lightweight web api framework with dependency injection for Typescript project
     -   <a href="#api.inject">@Inject()</a>
     -   <a href="#api.verbs">HTTP Verbs</a>
     -   <a href="#api.middlewares">@Middlewares()</a>
-    -   <a href="#api.create.middlewares">createRouteDecorator()</a>
+    -   <a href="#api.create.decorator">createRouteDecorator()</a>
     -   <a href="#api.module">@Module()</a>
 -   <a href="#container">Container API</a>
     -   <a href="#container.injectiontoken">InjectionToken()</a>
@@ -360,12 +360,12 @@ Usage:
 import { Controller, Middlewares } from 'wapidi';
 
 @Controller('dog')
-@Middlewares([EnsureAuthenticated])
+@Middlewares(EnsureAuthenticated)
 export class DogController {
     @Inject(DogService) accessor dogService: DogService;
 
     @Post()
-    @Middlewares([RequireRole('admin')])
+    @Middlewares(RequireRole('admin'))
     add(req: Request, res: Response) {
         this.dogService.add(req.body);
         res.sendStatus(201);
@@ -375,76 +375,158 @@ export class DogController {
 
 `EnsureAuthenticated` will be applied to every endpoint this controller registers, while `RequireRole` will be only applied to `add()`.
 
+`@Middleware()` takes an array of middlewares or a comma separated list of middlewares.
+
 #### What is a middleware?
 
-A middleware is a traditional express-like middleware, except, that you have to write middleware factories as the route meta object will be available for the middleware.
-
-Example:
+A middleware is of type `MiddlewareType`:
 
 ```ts
-const RequireRole = (requiredRole: string) => (route: Route) => (req: Request, res: Response, next: NextFunction) => {
-    if (!req.state || req.state.roleFromToken !== requiredRole) {
-        res.status(403).send('Insufficient role!');
-        return;
-    }
-    next();
-};
+type MiddlewareType = Function | Middleware | MiddlewareFactory;
 ```
 
-In this example we didn't use the `route` object for anything, but it is possible to implement the require role middleware different.
+**Function**
 
-1. we can create a custom decorator factory to decorate the route object with a role property
-2. then write a middleware to validate the route object against the role info from an access token
-
-Example:
+Your traditional connect-type middleware. You can use any from npm or write your own:
 
 ```ts
-const EnsureAuthorized = (route: Route) => (req: Request, res: Response, next: NextFunction) => {
-    if (!req.state || req.state.roleFromToken !== route.role) {
-        // Mind we used route.role here!
-        res.status(403).send('Insufficient role!');
-        return;
+import bodyParser from 'body-parser';
+
+@Controller()
+@Middlewares(bodyParser.json())
+class AppController {
+    @Get('test/:id')
+    @Middlewares((req, res, next) => {
+        if (req.params.id === '0') {
+            next('route');
+        } else {
+            next();
+        }
+    })
+    test(req, res) {
+        res.json('test');
     }
-    next();
-};
 
-const RequiredRole = (role: Route['role']) => createRouteDecorator<Route>(route => (route.role = role));
+    // ...
+}
+```
 
-@Controller('dog')
-@Middlewares([EnsureAuthenticated])
-export class DogController {
-    @Inject(DogService) accessor dogService: DogService;
+**Middleware**
 
-    @Get()
-    @RequiredRole('user')
-    @Middlewares([EnsureAuthorized])
-    getAll(req: Request, res: Response) {
-        res.json(this.dogService.getAll());
+Helper class to create a middleware which can be ignored on certain routes. Say you want to apply `bodyParser` on every route in `AppController` except one. You can use a `Middleware`:
+
+```ts
+import bodyParser from 'body-parser';
+import { Middleware } from 'wapidi';
+
+@Controller()
+@Middlewares(new Middleware(bodyParser.json()).ignoreOn('test'))
+class AppController {
+    @Get('test/:id')
+    test(req, res) {
+        res.json(req.body);
+    }
+
+    @Get('ping')
+    ping(req, res) {
+        res.json(req.body);
     }
 }
 ```
 
-#### Order of middlewares
+**MiddlewareFactory**
+
+Same as `Middleware` but it takes a function which returns a function.
+
+```ts
+constructor(middlewareFactoryFunction: (route: TRoute) => Function)
+```
+
+Usage:
+
+```ts
+const ROLES = {
+    user: 'user',
+    admin: 'admin',
+} as const;
+
+const mockUser = {
+    username: 'admin',
+    password: 'Password1',
+    roles: [ROLES.admin, ROLES.user],
+};
+
+type Route = BaseRoute & {
+    requireRole: keyof typeof ROLES;
+};
+
+const verifyRole = new MiddlewareFactory<Route>(route => (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.get('Authorization');
+    if (!authHeader) return res.sendStatus(401);
+
+    const [type, value] = authHeader.split(' ');
+    if (type && type === 'Basic' && value != null) {
+        const [username, password] = Buffer.from(value, 'base64').toString('utf8').split(':');
+        if (
+            username === mockUser.username &&
+            password === mockUser.password &&
+            mockUser.roles.includes(route.requireRole)
+        ) {
+            next();
+        } else {
+            res.sendStatus(403);
+        }
+    } else {
+        res.sendStatus(403);
+    }
+});
+
+const RequireRole = (role: keyof typeof ROLES) => createRouteDecorator<Route>(route => (route.requireRole = role));
+
+@Controller()
+class AppController {
+    @Get('test/:id')
+    @Middlewares((req, res, next) => {
+        if (req.params.id === '0') {
+            next('route');
+        } else {
+            next();
+        }
+    })
+    test(req, res) {
+        res.json('test');
+    }
+
+    @Get('test/:id')
+    @RequireRole(ROLES.admin)
+    @Middlewares(verifyRole)
+    testBreakOut(req, res) {
+        res.json('testBreakOut');
+    }
+}
+```
+
+#### Order of the middlewares
 
 When we apply middlewares both on the controller and on an endpoint it's important to note the order on which they get applied/called.
 
 ```ts
 @Controller()
 @Middlewares([
-    A, // runs first
-    B, // second
+    A, // 1
+    B, // 2
 ])
 class Ctrl {
     @Post()
     @Middlewares([
-        C, // third
-        D, // fourth
+        C, // 3
+        D, // 4
     ])
     method() {}
 }
 ```
 
-<h3 id="api.create.middlewares">createRouteDecorator()</h3>
+<h3 id="api.create.decorator">createRouteDecorator()</h3>
 
 Helper function to generate custom route decorators. Decorators which can decorate the route object.
 

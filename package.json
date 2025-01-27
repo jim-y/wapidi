@@ -25,7 +25,7 @@
         "pretest": "npm run build:tests",
         "test": "node --test --experimental-test-module-mocks",
         "test:container-api": "npm test -- test/container.spec.js",
-        "test:decorator-api": "npm test -- test/decorators.spec.ts",
+        "test:decorator-api": "npm test -- test/decorators.spec.js",
         "test:module-api": "npm test -- test/modules.spec.js",
         "test:server-api": "npm test -- test/server.spec.js"
     },

@@ -1,9 +1,10 @@
 import { container } from './container';
-import { WapidiError, DecoratorError } from './errors';
+import { WapidiError, DecoratorError, MiddlewareError } from './errors';
 import { InjectionToken } from './InjectionToken';
-import { getRouteFromContext, getRoutesFromContext, getRoutes, httpMethodDecoratorFactory } from './helpers';
+import { getRouteFromContext, getRoutesFromContext, httpMethodDecoratorFactory } from './helpers';
 import { isModuleOptions } from './types';
-import type { BaseRoute, InjectionTokenType, Instantiable, ModuleOptions, PreparedRoute } from './types';
+import type { BaseRoute, InjectionTokenType, Instantiable, MiddlewareType, ModuleOptions } from './types';
+import { Middleware, MiddlewareFactory } from './Middleware';
 
 // @ts-ignore
 Symbol.metadata ??= Symbol('Symbol.metadata');
@@ -152,23 +153,52 @@ export function Patch(path: string = '') {
     return httpMethodDecoratorFactory(path, 'patch');
 }
 
-export function Middlewares(middlewareFunctions: Function[]) {
+export function Middlewares(middlewareFunctions: MiddlewareType | MiddlewareType[], ...rest: MiddlewareType[]) {
     return function (originalMethodOrConstructor: any, context: ClassDecoratorContext | ClassMethodDecoratorContext) {
         try {
+            let middlewares: MiddlewareType[] = [];
+
+            if (Array.isArray(middlewareFunctions)) {
+                middlewares = middlewareFunctions;
+            } else if (
+                typeof middlewareFunctions === 'function' ||
+                middlewareFunctions instanceof Middleware ||
+                middlewareFunctions instanceof MiddlewareFactory
+            ) {
+                if (
+                    rest.some(
+                        middleware =>
+                            typeof middleware !== 'function' &&
+                            !(middleware instanceof Middleware) &&
+                            !(middleware instanceof MiddlewareFactory)
+                    )
+                ) {
+                    throw new MiddlewareError('Invalid middleware provided');
+                }
+                middlewares = [middlewareFunctions, ...rest];
+            } else {
+                throw new MiddlewareError('Invalid middleware provided.');
+            }
+
             if (context.kind === 'class') {
                 const routes = getRoutesFromContext(context);
                 for (const route of routes) {
                     if (!route.middlewares) route.middlewares = [];
-                    for (let index = middlewareFunctions.length - 1; index >= 0; index--) {
-                        route.middlewares.unshift(middlewareFunctions[index](route));
+                    for (let index = middlewares.length - 1; index >= 0; index--) {
+                        const middleware = middlewares[index];
+                        if (middleware instanceof Middleware || middleware instanceof MiddlewareFactory) {
+                            if (!middleware.ignoredRoutes.includes(route.actionName)) {
+                                route.middlewares.unshift(middleware);
+                            }
+                        } else {
+                            route.middlewares.unshift(middleware);
+                        }
                     }
                 }
             } else if (context.kind === 'method') {
                 const route = getRouteFromContext(context);
                 if (!route.middlewares) route.middlewares = [];
-                for (const middleware of middlewareFunctions) {
-                    route.middlewares.push(middleware(route));
-                }
+                route.middlewares.push(...middlewares);
                 return originalMethodOrConstructor;
             } else {
                 throw new DecoratorError(

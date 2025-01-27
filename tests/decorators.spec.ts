@@ -18,6 +18,8 @@ import {
     InjectionToken,
     Middlewares,
     BaseRoute,
+    Middleware,
+    MiddlewareFactory,
 } from '../dist';
 
 suite('Decorator API', () => {
@@ -132,7 +134,7 @@ suite('Decorator API', () => {
             assert.deepStrictEqual(expectedRoutes, routes);
         });
 
-        test('getRoutes() works on a controller')
+        test('getRoutes() works on a controller');
     });
 
     suite('@Injectable()', () => {
@@ -379,24 +381,16 @@ suite('Decorator API', () => {
         });
 
         test('@Middlewares() order', () => {
-            function A() {
-                return () => {};
-            }
-            function B() {
-                return () => {};
-            }
-            function C() {
-                return () => {};
-            }
-            function D() {
-                return () => {};
-            }
+            function A() {}
+            function B() {}
+            function C() {}
+            function D() {}
 
             @Controller()
-            @Middlewares([() => A, () => B])
+            @Middlewares([A, B])
             class Ctrl {
                 @Get()
-                @Middlewares([() => C, () => D])
+                @Middlewares([C, D])
                 get() {}
             }
 
@@ -404,10 +398,117 @@ suite('Decorator API', () => {
 
             assert.ok(route.middlewares);
             assert.strictEqual(route.middlewares.length, 4);
-            assert.strictEqual(route.middlewares.at(0), A);
-            assert.strictEqual(route.middlewares.at(1), B);
-            assert.strictEqual(route.middlewares.at(2), C);
-            assert.strictEqual(route.middlewares.at(3), D);
+            assert.strictEqual(route.middlewares.at(0), A, 'A in wrong place');
+            assert.strictEqual(route.middlewares.at(1), B, 'B in wrong place');
+            assert.strictEqual(route.middlewares.at(2), C, 'C in wrong place');
+            assert.strictEqual(route.middlewares.at(3), D, 'D in wrong place');
+        });
+
+        test('@Middlewares() can be applied positionally', () => {
+            function A() {}
+            function B() {}
+            function C() {}
+            function D() {}
+
+            @Controller()
+            @Middlewares(A, B)
+            class Ctrl {
+                @Get()
+                @Middlewares(C, D)
+                get() {}
+            }
+
+            const route: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['get'];
+
+            assert.ok(route.middlewares);
+            assert.strictEqual(route.middlewares.length, 4);
+            assert.strictEqual(route.middlewares.at(0), A, 'A in wrong place');
+            assert.strictEqual(route.middlewares.at(1), B, 'B in wrong place');
+            assert.strictEqual(route.middlewares.at(2), C, 'C in wrong place');
+            assert.strictEqual(route.middlewares.at(3), D, 'D in wrong place');
+        });
+
+        test('@Middlewares() handles new Middleware() middlewares', () => {
+            function A() {}
+            function B() {}
+
+            @Controller()
+            @Middlewares(new Middleware(A))
+            class Ctrl {
+                @Get()
+                @Middlewares(new Middleware(B))
+                get() {}
+            }
+
+            const route: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['get'];
+
+            assert.ok(route.middlewares);
+            assert.strictEqual(route.middlewares.length, 2);
+            assert.strictEqual((route.middlewares.at(0) as Middleware).run, A);
+            assert.strictEqual((route.middlewares.at(1) as Middleware).run, B);
+        });
+
+        test('@Middlewares() handles new MiddlewareFactory() middlewares', () => {
+            function A() {
+                return () => {};
+            }
+            function B() {
+                return () => {};
+            }
+
+            @Controller()
+            @Middlewares(new MiddlewareFactory(A))
+            class Ctrl {
+                @Get()
+                @Middlewares(new MiddlewareFactory(B))
+                get() {}
+            }
+
+            const route: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['get'];
+
+            assert.ok(route.middlewares);
+            assert.strictEqual(route.middlewares.length, 2);
+            assert.strictEqual((route.middlewares.at(0) as Middleware).run, A);
+            assert.strictEqual((route.middlewares.at(1) as Middleware).run, B);
+        });
+
+        test('@Middlewares() handles ignoreOn()', () => {
+            function A() {
+                return () => {};
+            }
+            function B() {
+                return () => {};
+            }
+            function C() {}
+            function D() {}
+            function E() {}
+
+            @Controller()
+            @Middlewares(new Middleware(C).ignoreOn('get'), new MiddlewareFactory(A).ignoreOn('get'), new Middleware(E))
+            class Ctrl {
+                @Get()
+                @Middlewares(new Middleware(D), new MiddlewareFactory(B))
+                get() {}
+
+                @Get()
+                anotherGet() {}
+            }
+
+            const routeForGet: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['get'];
+
+            assert.ok(routeForGet.middlewares);
+            assert.strictEqual(routeForGet.middlewares.length, 3);
+            assert.strictEqual((routeForGet.middlewares.at(0) as Middleware).run, E);
+            assert.strictEqual((routeForGet.middlewares.at(1) as Middleware).run, D);
+            assert.strictEqual((routeForGet.middlewares.at(2) as MiddlewareFactory).run, B);
+
+            const routeForAnotherGet: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['anotherGet'];
+
+            assert.ok(routeForAnotherGet.middlewares);
+            assert.strictEqual(routeForAnotherGet.middlewares.length, 3);
+            assert.strictEqual((routeForAnotherGet.middlewares.at(0) as Middleware).run, C);
+            assert.strictEqual((routeForAnotherGet.middlewares.at(1) as MiddlewareFactory).run, A);
+            assert.strictEqual((routeForAnotherGet.middlewares.at(2) as Middleware).run, E);
         });
     });
 

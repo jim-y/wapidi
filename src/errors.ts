@@ -20,3 +20,8 @@ export class DecoratorError extends Error {
     name = 'DecoratorError';
     origin = 'wapidi:decorators';
 }
+
+export class MiddlewareError extends Error {
+    name = 'MiddlewareError';
+    origin = 'wapidi:middleware';
+}

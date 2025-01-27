@@ -1,4 +1,29 @@
 import { InjectionToken } from './InjectionToken';
+import { Middleware, MiddlewareFactory } from './Middleware';
+
+// ===========================
+// =====    Decorator    =====
+// ===========================
+
+export type ModuleOptions = {
+    controllers: Instantiable[];
+};
+
+export function isModuleOptions(obj: string | ModuleOptions): obj is ModuleOptions {
+    return typeof obj !== 'string';
+}
+
+export function isClassMethodDecoratorContext(context: any): context is ClassMethodDecoratorContext {
+    return (context as ClassMethodDecoratorContext).kind === 'method';
+}
+
+export function isClassDecoratorContext(context: any): context is ClassDecoratorContext {
+    return (context as ClassDecoratorContext).kind === 'class';
+}
+
+// ===========================
+// =====    Container    =====
+// ===========================
 
 type ClassProvider = Instantiable;
 type ConstantProvider = any;
@@ -12,14 +37,6 @@ export interface Container {
     get spawns(): Symbol[];
     spawn(copy?: boolean): Container;
     dispose(): void;
-}
-
-export type ModuleOptions = {
-    controllers: Instantiable[];
-};
-
-export function isModuleOptions(obj: string | ModuleOptions): obj is ModuleOptions {
-    return typeof obj !== 'string';
 }
 
 export type Registry = Map<Symbol, Entry>;
@@ -96,13 +113,17 @@ export type Config =
     | FactoryProviderConfig
     | ValueProviderConfig;
 
+// =======================
+// =====    Route    =====
+// =======================
+
 export type HTTPVerb = 'get' | 'post' | 'patch' | 'put' | 'delete';
 
 export type BaseRoute = {
     method: HTTPVerb;
     path: string;
     actionName: string;
-    middlewares: Function[];
+    middlewares: MiddlewareType[];
 };
 
 export type PreparedRoute<TRoute extends BaseRoute = BaseRoute> = TRoute & {
@@ -112,10 +133,8 @@ export type PreparedRoute<TRoute extends BaseRoute = BaseRoute> = TRoute & {
 
 export type Routes<TRoute = BaseRoute> = Record<string, TRoute>;
 
-export function isClassMethodDecoratorContext(context: any): context is ClassMethodDecoratorContext {
-    return (context as ClassMethodDecoratorContext).kind === 'method';
-}
+// ============================
+// =====    Middleware    =====
+// ============================
 
-export function isClassDecoratorContext(context: any): context is ClassDecoratorContext {
-    return (context as ClassDecoratorContext).kind === 'class';
-}
+export type MiddlewareType = Function | Middleware | MiddlewareFactory;
