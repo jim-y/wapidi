@@ -2,7 +2,6 @@ import { suite, test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert';
 
 import { container, Controller, Get, Module, getRoutes } from '../dist';
-import type { PreparedRoute } from '../dist';
 
 suite('Module API', () => {
     before(() => container.dispose());

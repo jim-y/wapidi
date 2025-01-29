@@ -8,7 +8,16 @@ import {
     isSingletonProviderConfig,
     isValueProviderConfig,
 } from './types';
-import type { BaseRoute, Config, HTTPVerb, Instantiable, ModuleOptions, PreparedRoute, Routes } from './types';
+import type {
+    BaseRoute,
+    Config,
+    ExtendedControllerDecoratorMetadata,
+    ExtendedModuleDecoratorMetadata,
+    HTTPVerb,
+    Instantiable,
+    PreparedRoute,
+    Routes,
+} from './types';
 import { join } from 'node:path/posix';
 
 export const isClassLike = (obj: unknown): obj is Function =>
@@ -16,8 +25,13 @@ export const isClassLike = (obj: unknown): obj is Function =>
 export const isFunction = isClassLike;
 export const isString = (obj: unknown): obj is string => Object.prototype.toString.call(obj) === '[object String]';
 
-export const generateInjectionToken = (config: Config): [Symbol, string] => {
-    let token: Symbol;
+export const routesSymbol = Symbol.for('routes');
+export const prefixSymbol = Symbol.for('prefix');
+export const moduleSymbol = Symbol.for('module');
+export const optionsSymbol = Symbol.for('options');
+
+export const generateInjectionToken = (config: Config): [symbol, string] => {
+    let token: symbol;
     let friendlyToken: string;
 
     if (isClassProviderShorthandConfig(config)) {
@@ -31,8 +45,8 @@ export const generateInjectionToken = (config: Config): [Symbol, string] => {
     } else if (isClassProviderConfig(config)) {
         const provider = config.provide;
         if (isClassLike(provider)) {
-            token = Symbol.for((config.provide as Instantiable).name);
-            friendlyToken = (config.provide as Instantiable).name;
+            token = Symbol.for(provider.name);
+            friendlyToken = provider.name;
         } else if (provider instanceof InjectionToken) {
             token = provider.token;
             friendlyToken = provider.description;
@@ -57,8 +71,8 @@ export const generateInjectionToken = (config: Config): [Symbol, string] => {
         // right now, same as ClassProviderConfig, but might diverge in the future
         const provider = config.provide;
         if (isClassLike(provider)) {
-            token = Symbol.for((config.provide as Instantiable).name);
-            friendlyToken = (config.provide as Instantiable).name;
+            token = Symbol.for(provider.name);
+            friendlyToken = provider.name;
         } else if (provider instanceof InjectionToken) {
             token = provider.token;
             friendlyToken = provider.description;
@@ -88,15 +102,14 @@ export const generateInjectionToken = (config: Config): [Symbol, string] => {
 
 export function httpMethodDecoratorFactory(path: BaseRoute['path'], method: HTTPVerb) {
     return function (originalMethod: any, context: ClassMethodDecoratorContext) {
-        const methodName = context.name;
+        const methodName = context.name.toString();
         const route = { method, path, actionName: methodName } as BaseRoute;
-        const routesSymbol = Symbol.for('routes');
 
         if (!context.metadata[routesSymbol]) {
-            context.metadata[routesSymbol] = {};
+            context.metadata[routesSymbol] = {} as Routes;
         }
 
-        const routeMeta = context.metadata[routesSymbol][methodName];
+        const routeMeta = (context.metadata as ExtendedControllerDecoratorMetadata)[routesSymbol][methodName];
 
         if (!routeMeta) {
             context.metadata[routesSymbol][methodName] = route;
@@ -113,57 +126,54 @@ export function httpMethodDecoratorFactory(path: BaseRoute['path'], method: HTTP
 export function getRouteFromContext<TRoute extends BaseRoute = BaseRoute>(
     context: ClassMethodDecoratorContext
 ): TRoute {
-    const methodName = context.name;
-    const routesSymbol = Symbol.for('routes');
+    const methodName = context.name.toString();
 
     if (!context.metadata[routesSymbol]) {
-        context.metadata[routesSymbol] = {};
+        context.metadata[routesSymbol] = {} as Routes<TRoute>;
     }
 
     if (!context.metadata[routesSymbol][methodName]) {
         context.metadata[routesSymbol][methodName] = {} as TRoute;
     }
 
-    return context.metadata[routesSymbol][methodName];
+    return (context.metadata as ExtendedControllerDecoratorMetadata<TRoute>)[routesSymbol][methodName];
 }
 
 export function getRoutesFromContext(context: ClassDecoratorContext): BaseRoute[] {
-    const routesSymbol = Symbol.for('routes');
-
     if (!context.metadata[routesSymbol]) {
-        context.metadata[routesSymbol] = {};
+        context.metadata[routesSymbol] = {} as Routes;
     }
 
-    return Object.values(context.metadata[routesSymbol]);
+    return Object.values((context.metadata as ExtendedControllerDecoratorMetadata)[routesSymbol]);
 }
 
 const getRoutesForAController = <TRoute extends BaseRoute = BaseRoute>(
     Controller: Instantiable,
     __modulePrefix: string = ''
 ): PreparedRoute<TRoute>[] => {
-    const metadata = Controller[Symbol.metadata];
+    const metadata = Controller[Symbol.metadata] as ExtendedControllerDecoratorMetadata<TRoute>;
     const result = [] as PreparedRoute<TRoute>[];
-    const controllerPrefix = (metadata[Symbol.for('prefix')] as string) ?? '';
-    const routes = metadata[Symbol.for('routes')] as Routes<TRoute>;
+    const controllerPrefix = metadata[prefixSymbol] ?? '';
+    const routes = metadata[routesSymbol];
     const ctrl = container.get<typeof Controller>(Controller);
     for (const route of Object.values(routes)) {
         result.push({
             ...route,
             preparedPath: join('/', __modulePrefix, controllerPrefix, route.path),
-            action: ctrl[route.actionName].bind(ctrl),
+            action: ctrl[route.actionName].bind(ctrl) as Function,
         });
     }
     return result;
 };
 
 export const getRoutes = <TRoute extends BaseRoute = BaseRoute>(Class: Instantiable): PreparedRoute<TRoute>[] => {
-    const metadata = Class[Symbol.metadata];
-    const isModule = metadata[Symbol.for('module')];
+    const metadata = Class[Symbol.metadata] as ExtendedModuleDecoratorMetadata;
+    const isModule = metadata[moduleSymbol];
     const results = [] as PreparedRoute<TRoute>[];
 
     if (isModule) {
-        const moduleOptions = metadata[Symbol.for('options')] as ModuleOptions;
-        const modulePrefix = metadata[Symbol.for('prefix')] as string;
+        const moduleOptions = metadata[optionsSymbol];
+        const modulePrefix = metadata[prefixSymbol];
         const controllers = moduleOptions.controllers ?? [];
         for (const ctrl of controllers) {
             results.push(...getRoutesForAController<TRoute>(ctrl, modulePrefix));

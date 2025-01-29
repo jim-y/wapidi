@@ -2,7 +2,7 @@ import { Inject, Injectable } from 'wapidi';
 import { DB } from '../database';
 import type { Database } from '../database';
 
-type Cat = {
+export type Cat = {
     name: string;
     breed: string;
 };

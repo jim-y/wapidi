@@ -1,12 +1,27 @@
 import { container } from './container';
 import { WapidiError, DecoratorError, MiddlewareError } from './errors';
 import { InjectionToken } from './InjectionToken';
-import { getRouteFromContext, getRoutesFromContext, httpMethodDecoratorFactory } from './helpers';
+import {
+    getRouteFromContext,
+    getRoutesFromContext,
+    httpMethodDecoratorFactory,
+    moduleSymbol,
+    optionsSymbol,
+    prefixSymbol,
+} from './helpers';
 import { isModuleOptions } from './types';
-import type { BaseRoute, InjectionTokenType, Instantiable, MiddlewareType, ModuleOptions } from './types';
+import type {
+    BaseRoute,
+    ExtendedControllerDecoratorMetadata,
+    ExtendedModuleDecoratorMetadata,
+    InjectionTokenType,
+    Instantiable,
+    MiddlewareType,
+    ModuleOptions,
+} from './types';
 import { Middleware, MiddlewareFactory } from './Middleware';
 
-// @ts-ignore
+// @ts-expect-error polyfill for Symbol.metadata
 Symbol.metadata ??= Symbol('Symbol.metadata');
 
 const UNINITIALIZED = Symbol('UNINITIALIZED');
@@ -30,9 +45,9 @@ export function Module(prefixOrOptions?: string | ModuleOptions, options?: Modul
                 }
             }
 
-            context.metadata[Symbol.for('module')] = true;
-            context.metadata[Symbol.for('prefix')] = prefix;
-            context.metadata[Symbol.for('options')] = moduleOptions;
+            (context.metadata as ExtendedModuleDecoratorMetadata)[moduleSymbol] = true;
+            (context.metadata as ExtendedModuleDecoratorMetadata)[prefixSymbol] = prefix;
+            (context.metadata as ExtendedModuleDecoratorMetadata)[optionsSymbol] = moduleOptions;
         } catch (error) {
             throw new WapidiError(error);
         }
@@ -40,12 +55,12 @@ export function Module(prefixOrOptions?: string | ModuleOptions, options?: Modul
 }
 
 export function Controller(prefix: string = '') {
-    return function (constructor: Instantiable, context: ClassDecoratorContext) {
+    return function (constructor: Instantiable, context: ClassDecoratorContext): void {
         try {
             if (context.kind !== 'class') {
                 throw new DecoratorError('The @Controller decorator factory can only be used on the class');
             }
-            context.metadata[Symbol.for('prefix')] = prefix;
+            (context.metadata as ExtendedControllerDecoratorMetadata)[prefixSymbol] = prefix;
             container.register({
                 provide: context.name,
                 useSingleton: constructor,

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
-export const EnsureAuthenticated = () => (req: Request, res: Response, next: NextFunction) => {
+export const EnsureAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.get('Authorization');
 
     if (!authHeader) {
@@ -15,7 +15,6 @@ export const EnsureAuthenticated = () => (req: Request, res: Response, next: Nex
         return;
     }
 
-    // @ts-ignore
-    req.state = { token };
+    res.locals.state = { token };
     next();
 };

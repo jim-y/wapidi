@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { suite, test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
@@ -20,7 +21,9 @@ import {
     BaseRoute,
     Middleware,
     MiddlewareFactory,
+    routesSymbol,
 } from '../dist';
+import type { ExtendedControllerDecoratorMetadata } from '../dist/types';
 
 suite('Decorator API', () => {
     before(() => container.dispose());
@@ -30,7 +33,10 @@ suite('Decorator API', () => {
         beforeEach(() => container.dispose());
         test('decorating a class works & prefix', () => {
             @Controller('test')
-            class Ctrl {}
+            class Ctrl {
+                constructor() {}
+                asd() {}
+            }
 
             const ctrl = container.get(Ctrl);
 
@@ -61,7 +67,8 @@ suite('Decorator API', () => {
                 },
             };
 
-            const routes = Ctrl[Symbol.metadata][Symbol.for('routes')];
+            const routes = (Ctrl[Symbol.metadata] as ExtendedControllerDecoratorMetadata)[routesSymbol];
+
             assert.ok(routes);
             assert.deepStrictEqual(expectedRoutes, routes);
         });
@@ -128,7 +135,7 @@ suite('Decorator API', () => {
                 },
             };
 
-            const routes = Ctrl[Symbol.metadata][Symbol.for('routes')];
+            const routes = (Ctrl[Symbol.metadata] as ExtendedControllerDecoratorMetadata)[routesSymbol];
 
             assert.ok(routes);
             assert.deepStrictEqual(expectedRoutes, routes);
@@ -350,8 +357,7 @@ suite('Decorator API', () => {
                 get() {}
             }
 
-            const route: BaseRoute & { decoratedProperty: boolean } =
-                Ctrl[Symbol.metadata][Symbol.for('routes')]['get'];
+            const route = (Ctrl[Symbol.metadata] as ExtendedControllerDecoratorMetadata<Route>)[routesSymbol]['get'];
 
             assert.ok(route.decoratedProperty);
             assert.ok(route.middlewares);
@@ -374,7 +380,7 @@ suite('Decorator API', () => {
                 get() {}
             }
 
-            const route: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['get'];
+            const route: BaseRoute = Ctrl[Symbol.metadata][routesSymbol]['get'];
 
             assert.ok(route.middlewares);
             assert.strictEqual(route.middlewares.length, 1);
@@ -394,7 +400,7 @@ suite('Decorator API', () => {
                 get() {}
             }
 
-            const route: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['get'];
+            const route: BaseRoute = Ctrl[Symbol.metadata][routesSymbol]['get'];
 
             assert.ok(route.middlewares);
             assert.strictEqual(route.middlewares.length, 4);
@@ -418,7 +424,7 @@ suite('Decorator API', () => {
                 get() {}
             }
 
-            const route: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['get'];
+            const route: BaseRoute = Ctrl[Symbol.metadata][routesSymbol]['get'];
 
             assert.ok(route.middlewares);
             assert.strictEqual(route.middlewares.length, 4);
@@ -440,7 +446,7 @@ suite('Decorator API', () => {
                 get() {}
             }
 
-            const route: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['get'];
+            const route: BaseRoute = Ctrl[Symbol.metadata][routesSymbol]['get'];
 
             assert.ok(route.middlewares);
             assert.strictEqual(route.middlewares.length, 2);
@@ -464,7 +470,7 @@ suite('Decorator API', () => {
                 get() {}
             }
 
-            const route: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['get'];
+            const route: BaseRoute = Ctrl[Symbol.metadata][routesSymbol]['get'];
 
             assert.ok(route.middlewares);
             assert.strictEqual(route.middlewares.length, 2);
@@ -494,7 +500,7 @@ suite('Decorator API', () => {
                 anotherGet() {}
             }
 
-            const routeForGet: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['get'];
+            const routeForGet: BaseRoute = Ctrl[Symbol.metadata][routesSymbol]['get'];
 
             assert.ok(routeForGet.middlewares);
             assert.strictEqual(routeForGet.middlewares.length, 3);
@@ -502,7 +508,7 @@ suite('Decorator API', () => {
             assert.strictEqual((routeForGet.middlewares.at(1) as Middleware).run, D);
             assert.strictEqual((routeForGet.middlewares.at(2) as MiddlewareFactory).run, B);
 
-            const routeForAnotherGet: BaseRoute = Ctrl[Symbol.metadata][Symbol.for('routes')]['anotherGet'];
+            const routeForAnotherGet: BaseRoute = Ctrl[Symbol.metadata][routesSymbol]['anotherGet'];
 
             assert.ok(routeForAnotherGet.middlewares);
             assert.strictEqual(routeForAnotherGet.middlewares.length, 3);
@@ -550,7 +556,7 @@ suite('Decorator API', () => {
                 },
             };
 
-            const routes = Ctrl[Symbol.metadata][Symbol.for('routes')];
+            const routes = Ctrl[Symbol.metadata][routesSymbol];
             assert.ok(routes);
             assert.deepStrictEqual(expectedRoutes, routes);
         });

@@ -16,7 +16,7 @@ suite('Container API', () => {
         });
         test('disposing child containers work', () => {
             let child1 = container.spawn();
-            let child2 = container.spawn();
+            container.spawn();
             assert.strictEqual(container.spawns.length, 2);
 
             // Child containers may spawn new children themselves
@@ -32,7 +32,6 @@ suite('Container API', () => {
             assert.strictEqual(container.spawns.length, 1);
             assert.notStrictEqual(container.spawns.at(0), child1.id);
             child1 = null;
-            child2 = null;
             subChild = null;
 
             // disposing in root level should remove all (remaining) childs

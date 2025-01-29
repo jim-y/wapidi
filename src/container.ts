@@ -11,9 +11,9 @@ import { ConfigurationError, ContainerError, WapidiError } from './errors';
 import type { Config, InjectionTokenType, Instantiable, Container, Registry, Entry } from './types';
 
 class Store implements Container {
-    id: Symbol = Symbol();
+    id: symbol = Symbol();
 
-    #registry: Registry = new Map<Symbol, Entry>();
+    #registry: Registry = new Map<symbol, Entry>();
     #spawns: Store[] = [];
     #parent: Store;
 
@@ -89,7 +89,7 @@ class Store implements Container {
 
     public get<T>(injectionToken: Instantiable | InjectionTokenType): T {
         try {
-            let token: Symbol;
+            let token: symbol;
             let friendlyName: string;
 
             if (isClassLike(injectionToken)) {
@@ -140,7 +140,7 @@ class Store implements Container {
         }
     }
 
-    private onChildDisposed(childId: Symbol) {
+    private onChildDisposed(childId: symbol) {
         const childIndex = this.#spawns.findIndex(spawn => spawn.id === childId);
         if (childIndex > -1) {
             this.#spawns.splice(childIndex, 1);

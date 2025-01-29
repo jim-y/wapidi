@@ -1,11 +1,11 @@
-import { suite, test, before, after, beforeEach, afterEach, mock } from 'node:test';
+import { suite, test, before, afterEach, mock } from 'node:test';
 import assert from 'node:assert';
 
 import { container, Controller, Module, Get, Middlewares } from '../dist';
 
 suite('Server API', async () => {
     const getMock = mock.fn();
-    let server;
+    let server: any;
 
     before(async () => {
         mock.module('express', {
@@ -72,12 +72,12 @@ suite('Server API', async () => {
         assert.strictEqual(calls[1].arguments[0], '/api/dog/:id');
 
         // second route binding should register middleware functions as well
-        assert.strictEqual(calls[1].arguments.length, 4);
-        assert.strictEqual(typeof calls[1].arguments[1], 'function');
+        // the middleware functions are passed as an array
+        assert.strictEqual(calls[1].arguments.length, 3);
+        assert.ok(Array.isArray(calls[1].arguments[1]));
         assert.strictEqual(typeof calls[1].arguments[2], 'function');
-        assert.strictEqual(typeof calls[1].arguments[3], 'function');
 
         // last argument should be the handler
-        assert.strictEqual(calls[1].arguments[3](), 100);
+        assert.strictEqual(calls[1].arguments[2](), 100);
     });
 });

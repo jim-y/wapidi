@@ -1,5 +1,5 @@
 import { Controller, Inject, Get, Post } from 'wapidi';
-import { CatService } from './CatService';
+import { Cat, CatService } from './CatService';
 import { Request, Response } from 'express';
 import { LOGGER } from '../tokens';
 import type { Logger } from '../logger';
@@ -22,7 +22,7 @@ export class CatController {
 
     @Post()
     addCat(req: Request, res: Response) {
-        this.#catService.add(req.body);
+        this.#catService.add(req.body as Cat);
         res.sendStatus(201);
     }
 }

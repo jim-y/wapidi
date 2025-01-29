@@ -1,9 +1,37 @@
+import { moduleSymbol, optionsSymbol, prefixSymbol, routesSymbol } from './helpers';
 import { InjectionToken } from './InjectionToken';
 import { Middleware, MiddlewareFactory } from './Middleware';
 
 // ===========================
 // =====    Decorator    =====
 // ===========================
+
+export type HTTPVerb = 'get' | 'post' | 'patch' | 'put' | 'delete';
+
+export type BaseRoute = {
+    method: HTTPVerb;
+    path: string;
+    actionName: string;
+    middlewares: MiddlewareType[];
+};
+
+export type PreparedRoute<TRoute extends BaseRoute = BaseRoute> = TRoute & {
+    preparedPath: string;
+    action: Function;
+};
+
+export type Routes<TRoute = BaseRoute> = Record<string, TRoute>;
+
+export type ExtendedControllerDecoratorMetadata<TRoute extends BaseRoute = BaseRoute> = DecoratorMetadataObject & {
+    [routesSymbol]: Routes<TRoute>;
+    [prefixSymbol]: string;
+};
+
+export type ExtendedModuleDecoratorMetadata = DecoratorMetadataObject & {
+    [prefixSymbol]: string;
+    [moduleSymbol]: boolean;
+    [optionsSymbol]: ModuleOptions;
+};
 
 export type ModuleOptions = {
     controllers: Instantiable[];
@@ -30,16 +58,16 @@ type ConstantProvider = any;
 type FactoryProvider = Function;
 
 export interface Container {
-    id: Symbol;
+    id: symbol;
     register(config: Config): void;
     setup(configs: Config[]): void;
-    get<T>(injectionToken: Instantiable | InjectionTokenType): T;
-    get spawns(): Symbol[];
+    get<T = unknown>(injectionToken: Instantiable<T> | InjectionTokenType): T;
+    get spawns(): symbol[];
     spawn(copy?: boolean): Container;
     dispose(): void;
 }
 
-export type Registry = Map<Symbol, Entry>;
+export type Registry = Map<symbol, Entry>;
 
 export type Entry =
     | {
@@ -88,9 +116,9 @@ export function isFactoryProviderConfig(config: Config): config is FactoryProvid
     return (config as FactoryProviderConfig).useFactory !== undefined;
 }
 
-export type SingletonProviderConfig = {
+export type SingletonProviderConfig<T = unknown> = {
     provide: Instantiable | InjectionTokenType;
-    useSingleton: Instantiable;
+    useSingleton: Instantiable<T>;
 };
 
 export function isSingletonProviderConfig(config: Config): config is SingletonProviderConfig {
@@ -99,7 +127,7 @@ export function isSingletonProviderConfig(config: Config): config is SingletonPr
 
 export type ValueProviderConfig = {
     provide: InjectionTokenType;
-    useValue: any;
+    useValue: unknown;
 };
 
 export function isValueProviderConfig(config: Config): config is ValueProviderConfig {
@@ -112,26 +140,6 @@ export type Config =
     | SingletonProviderConfig
     | FactoryProviderConfig
     | ValueProviderConfig;
-
-// =======================
-// =====    Route    =====
-// =======================
-
-export type HTTPVerb = 'get' | 'post' | 'patch' | 'put' | 'delete';
-
-export type BaseRoute = {
-    method: HTTPVerb;
-    path: string;
-    actionName: string;
-    middlewares: MiddlewareType[];
-};
-
-export type PreparedRoute<TRoute extends BaseRoute = BaseRoute> = TRoute & {
-    preparedPath: string;
-    action: Function;
-};
-
-export type Routes<TRoute = BaseRoute> = Record<string, TRoute>;
 
 // ============================
 // =====    Middleware    =====

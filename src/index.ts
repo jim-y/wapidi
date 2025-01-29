@@ -4,4 +4,4 @@ export * from './decorators';
 export * from './types';
 export * from './errors';
 export * from './Middleware';
-export { getRoutes } from './helpers';
+export { getRoutes, routesSymbol } from './helpers';
