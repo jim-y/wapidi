@@ -1,69 +1,71 @@
 {
-    "name": "wapidi",
-    "description": "A lightweight web api framework with depenedency injection for Typescript projects with first-class support for expressjs",
-    "version": "0.8.0",
-    "exports": {
-        ".": "./dist/index.js",
-        "./container": "./dist/container.js",
-        "./decorators": "./dist/decorators.js",
-        "./server": "./dist/server.js",
-        "./InjectionToken": "./dist/InjectionToken.js",
-        "./errors": "./dist/errors.js",
-        "./types": "./dist/types.js"
-    },
-    "types": "./dist/index.d.ts",
-    "files": [
-        "/dist"
-    ],
-    "scripts": {
-        "prebuild": "rimraf dist",
-        "build": "tsc",
-        "eslint": "eslint .",
-        "watch": "npm run build -- -w",
-        "prebuild:tests": "rimraf test",
-        "build:tests": "tsc --project tests",
-        "watch:tests": "npm run build:tests -- -w",
-        "pretest": "npm run build:tests",
-        "test": "node --test --experimental-test-module-mocks",
-        "test:container-api": "npm test -- test/container.spec.js",
-        "test:decorator-api": "npm test -- test/decorators.spec.js",
-        "test:module-api": "npm test -- test/modules.spec.js",
-        "test:server-api": "npm test -- test/server.spec.js"
-    },
-    "keywords": [
-        "express",
-        "typescript",
-        "javascript",
-        "node",
-        "api",
-        "dependency injection",
-        "container",
-        "di",
-        "ioc",
-        "express.js",
-        "framework"
-    ],
-    "author": "Attila Kling <attila.kling@gmail.com>",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/jim-y/wapidi.git"
-    },
-    "license": "MIT",
-    "devDependencies": {
-        "@eslint/js": "^9.19.0",
-        "@types/express": "^5.0.0",
-        "eslint": "^9.19.0",
-        "globals": "^15.14.0",
-        "rimraf": "^6.0.1",
-        "typescript-eslint": "^8.22.0"
-    },
-    "peerDependencies": {
-        "express": "^4.21.2",
-        "typescript": "^5.7.3"
-    },
-    "peerDependenciesMeta": {
-        "express": {
-            "optional": true
-        }
+  "name": "wapidi",
+  "description": "A lightweight web api framework with depenedency injection for Typescript projects with first-class support for expressjs",
+  "version": "0.8.0",
+  "exports": {
+    ".": "./dist/index.js",
+    "./container": "./dist/container.js",
+    "./decorators": "./dist/decorators.js",
+    "./server": "./dist/server.js",
+    "./InjectionToken": "./dist/InjectionToken.js",
+    "./errors": "./dist/errors.js",
+    "./types": "./dist/types.js"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "prebuild": "rimraf dist",
+    "build": "tsc",
+    "eslint": "eslint .",
+    "watch": "npm run build -- -w",
+    "prebuild:tests": "rimraf test",
+    "build:tests": "tsc --project tests",
+    "watch:tests": "npm run build:tests -- -w",
+    "pretest": "npm run build:tests",
+    "test": "node --test --experimental-test-module-mocks",
+    "test:container-api": "npm test -- test/container.spec.js",
+    "test:decorator-api": "npm test -- test/decorators.spec.js",
+    "test:module-api": "npm test -- test/modules.spec.js",
+    "test:server-api": "npm test -- test/server.spec.js",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "express",
+    "typescript",
+    "javascript",
+    "node",
+    "api",
+    "dependency injection",
+    "container",
+    "di",
+    "ioc",
+    "express.js",
+    "framework"
+  ],
+  "author": "Attila Kling <attila.kling@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jim-y/wapidi.git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "@types/express": "^5.0.0",
+    "eslint": "^9.19.0",
+    "globals": "^15.14.0",
+    "husky": "^9.1.7",
+    "rimraf": "^6.0.1",
+    "typescript-eslint": "^8.22.0"
+  },
+  "peerDependencies": {
+    "express": "^4.21.2",
+    "typescript": "^5.7.3"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
     }
+  }
 }
