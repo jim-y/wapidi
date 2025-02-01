@@ -2,33 +2,52 @@
 
 A lightweight web api framework with dependency injection for Typescript projects with first-class support for [expressjs](https://expressjs.com/).
 
--   <a href="#installation">Installation</a>
--   <a href="#usage">Usage</a>
--   <a href="#philosophy">Philosophy</a>
--   <a href="#api">Decorator API</a>
-    -   <a href="#api.controller">@Controller()</a>
-    -   <a href="#api.injectable">@Injectable()</a>
-    -   <a href="#api.singleton">@Singleton()</a>
-    -   <a href="#api.inject">@Inject()</a>
-    -   <a href="#api.verbs">HTTP Verbs</a>
-    -   <a href="#api.middlewares">@Middlewares()</a>
-    -   <a href="#api.create.decorator">createRouteDecorator()</a>
-    -   <a href="#api.module">@Module()</a>
--   <a href="#container">Container API</a>
-    -   <a href="#container.injectiontoken">InjectionToken()</a>
-    -   <a href="#container.register">register()</a>
-    -   <a href="#container.setup">setup()</a>
-    -   <a href="#container.get">get()</a>
-    -   <a href="#container.spawn">spawn()</a>
-    -   <a href="#container.dispose">dispose()</a>
--   <a href="#server">Server API</a>
-    -   <a href="#server.bind">bind()</a>
--   <a href="#route">Route</a>
--   <a href="#examples">Examples</a>
--   <a href="#no-express">Not using express?</a>
-    -   <a href="no-express.routes">getRoutes()</a>
+- [WAPIDI](#wapidi)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Philosophy](#philosophy)
+    - [What does it bring to the table?](#what-does-it-bring-to-the-table)
+    - [What is it NOT?](#what-is-it-not)
+    - [Basic Example](#basic-example)
+  - [Decorator API](#decorator-api)
+    - [@Controller()](#controller)
+    - [@Injectable()](#injectable)
+    - [@Singleton()](#singleton)
+    - [@Inject()](#inject)
+    - [HTTP Verbs](#http-verbs)
+    - [@Get()](#get)
+    - [@Post()](#post)
+    - [@Put()](#put)
+    - [@Patch()](#patch)
+    - [@Delete()](#delete)
+    - [@Middlewares()](#middlewares)
+      - [What is a middleware?](#what-is-a-middleware)
+        - [Function](#function)
+        - [Middleware](#middleware)
+        - [MiddlewareFactory](#middlewarefactory)
+      - [Order of the middlewares](#order-of-the-middlewares)
+    - [createRouteDecorator()](#createroutedecorator)
+    - [@Module()](#module)
+  - [Container API](#container-api)
+    - [container](#container)
+    - [InjectionToken()](#injectiontoken)
+      - [constructor type](#constructor-type)
+      - [string](#string)
+      - [InjectionToken](#injectiontoken-1)
+    - [register()](#register)
+    - [setup()](#setup)
+    - [get()](#get-1)
+    - [spawn()](#spawn)
+    - [dispose()](#dispose)
+  - [Server API](#server-api)
+    - [bind()](#bind)
+  - [Route](#route)
+  - [Examples](#examples)
+  - [Not using express?](#not-using-express)
+    - [getRoutes()](#getroutes)
 
-<h2 id="installation">Installation</h2>
+
+## Installation
 
 With npm (using express):
 
@@ -44,7 +63,7 @@ npm install --save wapidi --omit=optional
 
 Wapidi relies on new typescript features like the stage 3 decorators introduced in typescript 5.0 and the decorator metadata feature introduced in version 5.2. This means you should at least be on version 5.2 of typescript.
 
-`express` and `typescript` are peer-dependencies (`express` being optional, see <a href="#no-express">Not using express?</a> section) but other than these two there are no other deps so `wapidi` is extremely lightweight.
+`express` and `typescript` are peer-dependencies (`express` being optional, see [Not using express?](#not-using-express) section) but other than these two there are no other deps so `wapidi` is extremely lightweight.
 
 Enable these flags in your tsconfig.json file to support the decorator metadata feature as suggested by the [typescript docs](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata).
 
@@ -57,7 +76,7 @@ Enable these flags in your tsconfig.json file to support the decorator metadata 
 }
 ```
 
-<h2 id="usage">Usage</h2>
+## Usage
 
 You can import all `wapidi` api from the main module
 
@@ -73,20 +92,20 @@ import { WapidiError } from 'wapidi/errors';
 import type { Container } from 'wapidi/types';
 ```
 
-<h2 id="philosophy">Philosophy</h2>
+## Philosophy
 
 This lightweight web api framework is opinionated but it helps managing your api routes with decorators and dependency injection.
 
 ### What does it bring to the table?
 
--   It uses dependency injection relying on stage:3 decorators implemented by typescript, as opposed to legacy decorators
--   It provides a very lightweight solution of structuring your api endpoints under controller domains and business logic into reusable services
--   Integrates with `express`-like frameworks, but offers solutions outside of `express`
+- It uses dependency injection relying on stage:3 decorators implemented by typescript, as opposed to legacy decorators
+- It provides a very lightweight solution of structuring your api endpoints under controller domains and business logic into reusable services
+- Integrates with `express`-like frameworks, but offers solutions outside of `express`
 
 ### What is it NOT?
 
--   It is NOT a fully-fledged node framework which tries to solve everything
--   It tries to solve one (two) problems but aims to solve those well
+- It is NOT a fully-fledged node framework which tries to solve everything
+- It tries to solve one (two) problems but aims to solve those well
 
 It enforces using controllers for managing endpoints. The controllers might inject services, and services handle the business logic. Each endpoint is represented by a "hidden" route object. You can decorate this route object with decorators and consume it with middlewares.
 
@@ -115,9 +134,9 @@ class Ctrl {
 
 ### Basic Example
 
-For more examples, please check the [examples](https://github.com/jim-y/wapidi/tree/main/examples) folder.
+For more examples, please check the [examples](examples) folder.
 
-_CatController.ts_
+CatController.ts
 
 ```ts
 @Controller('cat')
@@ -136,7 +155,7 @@ class CatController {
 }
 ```
 
-_CatService.ts_
+CatService.ts
 
 ```ts
 @Injectable()
@@ -153,9 +172,9 @@ export class CatService {
 }
 ```
 
-<h2 id="api">Decorator API</h2>
+## Decorator API
 
-<h3 id="api.controller">@Controller()</h3>
+### @Controller()
 
 Class decorator factory. Can be used on a class with a path prefix as parameter. Can be used to construct endpoints under a similar domain.
 
@@ -189,7 +208,7 @@ Then your endpoint is reachable
 GET http://localhost:3000/api/v1/cat HTTP/1.1
 ```
 
-<h3 id="api.injectable">@Injectable()</h3>
+### @Injectable()
 
 Class decorator factory. Marks a class as injectable by dependency injection.
 
@@ -210,21 +229,19 @@ Consuming the provider can be done either by using the `Inject()` decorator in a
 
 ```ts
 /// either
-
 @Injectable()
 class SomeClass {
     @Inject(EchoService) accessor #echoService: EchoService;
 }
 
 /// or
-
 async function EnsureAuthenticated(req, res, next) {
     const echoServiceInstance = container.get<EchoService>(EchoService);
     // ...
 }
 ```
 
-<h3 id="api.singleton">@Singleton()</h3>
+### @Singleton()
 
 Class decorator factory. Marks a class as injectable by dependency injection.
 
@@ -243,7 +260,7 @@ export class EchoService {
 
 Consuming the provider can be done either by using the `Inject()` decorator factory in a class, or getting it from the IoC container. For every dependable it shares a singleton instance.
 
-<h3 id="api.inject">@Inject()</h3>
+### @Inject()
 
 Class accessor field decorator factory. Injects a value from the IoC container to the field.
 
@@ -258,15 +275,15 @@ class SomeClass {
 
 **Notes**: the host class does NOT have to be part of the IoC container.
 
-<h3 id="api.verbs">HTTP Verbs</h3>
+### HTTP Verbs
 
 Registers the host controller's decorated method in the routes object.
 
 The decorator factory adds the following properties to the route object:
 
--   path (optional)
--   method
--   actionName
+- path (optional)
+- method
+- actionName
 
 The host class must be decorated with `@Controller()`.
 
@@ -350,7 +367,7 @@ class CatController {
 }
 ```
 
-<h3 id="api.middlewares">@Middlewares()</h3>
+### @Middlewares()
 
 Class or class method decorator factory. Applies middlewares to certain endpoints on a controller. When applied as a class decorator factory then every endpoint on the controller gets the middleware, otherwise only the endpoint on which it was applied gets it.
 
@@ -385,7 +402,7 @@ A middleware is of type `MiddlewareType`:
 type MiddlewareType = Function | Middleware | MiddlewareFactory;
 ```
 
-**Function**
+##### Function
 
 Your traditional connect-type middleware. You can use any from npm or write your own:
 
@@ -411,7 +428,7 @@ class AppController {
 }
 ```
 
-**Middleware**
+##### Middleware
 
 Helper class to create a middleware which can be ignored on certain routes. Say you want to apply `bodyParser` on every route in `AppController` except one. You can use a `Middleware`:
 
@@ -434,7 +451,7 @@ class AppController {
 }
 ```
 
-**MiddlewareFactory**
+##### MiddlewareFactory
 
 Same as `Middleware` but it takes a function which returns a function.
 
@@ -526,7 +543,7 @@ class Ctrl {
 }
 ```
 
-<h3 id="api.create.decorator">createRouteDecorator()</h3>
+### createRouteDecorator()
 
 Helper function to generate custom route decorators. Decorators which can decorate the route object.
 
@@ -550,11 +567,11 @@ export class DogController {
 
 Decorating the underlying `Route` object for an endpoint let's you extend your app's functionality. Middlewares can interact with the route object. For example, you can create a decorator factory to define the request schema then create a middleware which validates it. The schema validator middleware could be applied to the controller so that every endpoint might have schema validation if the route object contains a schema object.
 
-<h3 id="api.module">@Module()</h3>
+### @Module()
 
 You can collect controllers under a common module, and bind the module to `expressjs`. A module might have a path prefix and all controllers under the module inherit the prefix.
 
-There is an example express app utilising modules => [with-modules](https://github.com/jim-y/wapidi/tree/main/examples/with-modules).
+There is an example express app utilising modules => [examples/with-modules](examples/with-modules).
 
 Usage:
 
@@ -569,8 +586,7 @@ class ApiModule {}
 app.use(bind(ApiModule));
 ```
 
-You can use modules even without the server-api as <a href="no-express.routes">getRoutes()</a> works on a class
-decorated with `@Module()` as well.
+You can use modules even without the server-api as [getRoutes()](#getroutes) works on a class decorated with `@Module()` as well.
 
 ```ts
 @Controller('cat')
@@ -611,7 +627,7 @@ const routes = getRoutes(ApiModule);
 // ]
 ```
 
-<h2 id="container">Container API</h2>
+## Container API
 
 ### container
 
@@ -665,7 +681,7 @@ export const initialize = () => {
 };
 ```
 
-<h3 id="container.injectiontoken">InjectionToken()</h3>
+### InjectionToken()
 
 When registering a provider to the container you have to provide a unique token which identifies the provider.
 
@@ -714,7 +730,7 @@ container.register({
 });
 ```
 
-<h3 id="container.register">register()</h3>
+### register()
 
 Registers a provider to the container.
 
@@ -778,7 +794,7 @@ export type ValueProviderConfig = {
 };
 ```
 
-<h3 id="container.setup">setup()</h3>
+### setup()
 
 Batch registration of providers on the container.
 
@@ -808,7 +824,7 @@ container.setup([
 ]);
 ```
 
-<h3 id="container.get">get()</h3>
+### get()
 
 Get a provider from the container in exchange for an injection token.
 
@@ -820,7 +836,7 @@ import { container } from 'wapidi';
 container.get<ConfigType>(CONFIG);
 ```
 
-<h3 id="container.spawn">spawn()</h3>
+### spawn()
 
 Spawns a new child container. A child container behaves similarly than the parent container except decorators will
 register providers **only** on the global container and not on children.
@@ -835,17 +851,17 @@ childContainer.get(...);
 // ...
 ```
 
-<h3 id="container.dispose">dispose()</h3>
+### dispose()
 
 Disposes the container and all of it's children.
 
-<h2 id="server">Server API</h3>
+## Server API
 
-<h3 id="server.bind">bind()</h3>
+### bind()
 
 Binds controller endpoints to an express instance. Similar to how one would bind an express Router instance to an express instance.
 
-**Note**: unlike any other function, you have to import this from `wapidi/server`. This ensures that one can use `wapidi` without express. See the <a href="#no-express">Not using express?</a> section.
+**Note**: unlike any other function, you have to import this from `wapidi/server`. This ensures that one can use `wapidi` without express. See the [Not using express?](#not-using-express) section.
 
 Usage:
 
@@ -861,7 +877,7 @@ app.use('/api', bind(CatController));
 app.use(bind(DogController));
 ```
 
-<h2 id="route">Route</h2>
+## Route
 
 In `wapidi` every endpoint of your api is represented by a `BaseRoute` object.
 
@@ -875,9 +891,9 @@ export type BaseRoute = {
 };
 ```
 
-When you create a route decorator | decorator factory you extend this route object with new properties. You can add new properties for the route object with <a href="#api.create.middlewares">createRouteDecorator()</a>
+When you create a route decorator | decorator factory you extend this route object with new properties. You can add new properties for the route object with [createRouteDecorator()](#createroutedecorator)
 
-To ensure type correctness in `createRouteDecorator()` you can provide a generic type parameter which extends `BaseRoute`. That is, if your decorator factory would add a new route property **_requiredRole_**, then you should create a new type
+To ensure type correctness in `createRouteDecorator()` you can provide a generic type parameter which extends `BaseRoute`. That is, if your decorator factory would add a new route property _requiredRole_, then you should create a new type
 
 ```ts
 import type { BaseRoute } from 'wapidi/types';
@@ -905,11 +921,11 @@ get() {}
 
 Extending the route object is useful because your middlewares can access the endpoint's route object and validate by them.
 
-<h2 id="examples">Examples</h2>
+## Examples
 
-Please check the [examples](https://github.com/jim-y/wapidi/tree/main/examples) folder for examples
+Please check the [examples](examples) folder for examples
 
-<h2 id="no-express">Not using express?</h2>
+## Not using express?
 
 If you don't use `express` but still want to use `wapidi` you can install `wapidi` by omitting installing `express` as
 
@@ -921,11 +937,11 @@ Then, you loose the ability to use our express helpers from `wapidi/server`.
 
 The `wapidi/server` module references express, so you can safely use `wapidi` without installing `express` if you won't reference `wapidi/server` in your codebase.
 
-For example, the [examples/without-express](https://github.com/jim-y/wapidi/tree/main/examples/without-express) example shows how one could use wapidi using vanilla node `http(s).createServer` utilisng the `getRoutes()` helper function.
+For example, the [examples/without-express](examples/without-express) example shows how one could use wapidi using vanilla node `http(s).createServer` utilisng the `getRoutes()` helper function.
 
 This example **doesn't** have `express` installed as dependency.
 
-<h3 id="no-express.routes">getRoutes()</h3>
+### getRoutes()
 
 If you don't want to use `express` you can still use the Decorator API and the Container API. In this case you might be still interested in the routes of the controllers/modules. For such cases you can use the `getRoutes()` helper function to access the generated routes.
 
