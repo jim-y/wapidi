@@ -22,6 +22,7 @@ import {
     Middleware,
     MiddlewareFactory,
     routesSymbol,
+    prefixSymbol,
 } from '../dist';
 import type { ExtendedControllerDecoratorMetadata } from '../dist/types';
 
@@ -41,7 +42,7 @@ suite('Decorator API', () => {
             const ctrl = container.get(Ctrl);
 
             assert.ok(ctrl);
-            assert.strictEqual(Ctrl[Symbol.metadata][Symbol.for('prefix')], 'test');
+            assert.strictEqual(Ctrl[Symbol.metadata][prefixSymbol], 'test');
         });
 
         test('extending the route meta & createRouteDecorator works', () => {

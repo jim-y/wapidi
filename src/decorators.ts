@@ -1,14 +1,8 @@
 import { container } from './container';
 import { WapidiError, DecoratorError, MiddlewareError } from './errors';
 import { InjectionToken } from './InjectionToken';
-import {
-    getRouteFromContext,
-    getRoutesFromContext,
-    httpMethodDecoratorFactory,
-    moduleSymbol,
-    optionsSymbol,
-    prefixSymbol,
-} from './helpers';
+import { getRouteFromContext, getRoutesFromContext, httpMethodDecoratorFactory } from './helpers';
+import { moduleSymbol, optionsSymbol, prefixSymbol } from './symbols';
 import { isModuleOptions } from './types';
 import type {
     BaseRoute,

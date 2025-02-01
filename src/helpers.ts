@@ -8,6 +8,7 @@ import {
     isSingletonProviderConfig,
     isValueProviderConfig,
 } from './types';
+import { routesSymbol, prefixSymbol, moduleSymbol, optionsSymbol } from './symbols';
 import type {
     BaseRoute,
     Config,
@@ -25,10 +26,9 @@ export const isClassLike = (obj: unknown): obj is Function =>
 export const isFunction = isClassLike;
 export const isString = (obj: unknown): obj is string => Object.prototype.toString.call(obj) === '[object String]';
 
-export const routesSymbol = Symbol.for('routes');
-export const prefixSymbol = Symbol.for('prefix');
-export const moduleSymbol = Symbol.for('module');
-export const optionsSymbol = Symbol.for('options');
+export const getTokenFor = (postfix: string) => {
+    return Symbol.for(`wapidi:${postfix}`);
+};
 
 export const generateInjectionToken = (config: Config): [symbol, string] => {
     let token: symbol;
@@ -37,7 +37,7 @@ export const generateInjectionToken = (config: Config): [symbol, string] => {
     if (isClassProviderShorthandConfig(config)) {
         const provider = config.provide;
         if (isClassLike(provider)) {
-            token = Symbol.for(provider.name);
+            token = getTokenFor(provider.name);
             friendlyToken = provider.name;
         } else {
             throw new ConfigurationError('config.provide should be class|Function type');
@@ -45,13 +45,13 @@ export const generateInjectionToken = (config: Config): [symbol, string] => {
     } else if (isClassProviderConfig(config)) {
         const provider = config.provide;
         if (isClassLike(provider)) {
-            token = Symbol.for(provider.name);
+            token = getTokenFor(provider.name);
             friendlyToken = provider.name;
         } else if (provider instanceof InjectionToken) {
             token = provider.token;
             friendlyToken = provider.description;
         } else if (isString(provider)) {
-            token = Symbol.for(provider);
+            token = getTokenFor(provider);
             friendlyToken = provider;
         } else {
             throw new ConfigurationError('config.provide should be class|Function, InjectionToken or string');
@@ -62,7 +62,7 @@ export const generateInjectionToken = (config: Config): [symbol, string] => {
             token = provider.token;
             friendlyToken = provider.description;
         } else if (isString(provider)) {
-            token = Symbol.for(provider);
+            token = getTokenFor(provider);
             friendlyToken = provider;
         } else {
             throw new ConfigurationError('config.provide should be an InjectionToken or string');
@@ -71,13 +71,13 @@ export const generateInjectionToken = (config: Config): [symbol, string] => {
         // right now, same as ClassProviderConfig, but might diverge in the future
         const provider = config.provide;
         if (isClassLike(provider)) {
-            token = Symbol.for(provider.name);
+            token = getTokenFor(provider.name);
             friendlyToken = provider.name;
         } else if (provider instanceof InjectionToken) {
             token = provider.token;
             friendlyToken = provider.description;
         } else if (isString(provider)) {
-            token = Symbol.for(provider);
+            token = getTokenFor(provider);
             friendlyToken = provider;
         } else {
             throw new ConfigurationError('config.provide should be class|Function, InjectionToken or string');
@@ -88,7 +88,7 @@ export const generateInjectionToken = (config: Config): [symbol, string] => {
             token = provider.token;
             friendlyToken = provider.description;
         } else if (isString(provider)) {
-            token = Symbol.for(provider);
+            token = getTokenFor(provider);
             friendlyToken = provider;
         } else {
             throw new ConfigurationError('config.provide should be an InjectionToken or string');

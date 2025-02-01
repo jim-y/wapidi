@@ -1,4 +1,9 @@
 export class InjectionToken {
     token = Symbol();
-    constructor(public description?: string) {}
+    description?: string;
+    constructor(description?: string) {
+        if (description) {
+            this.description = description;
+        }
+    }
 }

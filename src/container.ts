@@ -1,4 +1,4 @@
-import { generateInjectionToken, isClassLike, isString, isFunction } from './helpers';
+import { generateInjectionToken, isClassLike, isString, isFunction, getTokenFor } from './helpers';
 import { InjectionToken } from './InjectionToken';
 import {
     isClassProviderConfig,
@@ -36,12 +36,15 @@ class Store implements Container {
 
     public register(config: Config) {
         try {
-            if (!config.provide) throw new ConfigurationError('config.provide must be provided');
+            if (!config.provide) {
+                throw new ConfigurationError('config.provide must be provided');
+            }
 
             const [token, friendlyToken] = generateInjectionToken(config);
 
-            if (this.#registry.has(token))
+            if (this.#registry.has(token)) {
                 throw new ContainerError(`The provider (${friendlyToken}) is already registered`);
+            }
 
             if (isFactoryProviderConfig(config)) {
                 if (!isFunction(config.useFactory))
@@ -54,8 +57,8 @@ class Store implements Container {
                 if (!isClassLike(config.useSingleton))
                     throw new ConfigurationError('`config.useSingleton` should be a class');
                 this.#registry.set(token, {
-                    type: 'constant',
-                    value: new config.useSingleton(),
+                    type: 'singleton',
+                    value: config.useSingleton,
                 });
             } else if (isValueProviderConfig(config)) {
                 this.#registry.set(token, {
@@ -93,7 +96,7 @@ class Store implements Container {
             let friendlyName: string;
 
             if (isClassLike(injectionToken)) {
-                token = Symbol.for(injectionToken.name);
+                token = getTokenFor(injectionToken.name);
                 friendlyName = injectionToken.name;
             } else if (injectionToken instanceof InjectionToken) {
                 token = injectionToken.token;
@@ -101,13 +104,13 @@ class Store implements Container {
                     injectionToken.description ??
                     `[unnamed InjectionToken instance][token:${injectionToken.token.toString()}]`;
             } else if (isString(injectionToken)) {
-                token = Symbol.for(injectionToken);
+                token = getTokenFor(injectionToken);
                 friendlyName = injectionToken;
             } else {
                 throw new ContainerError(`Invalid injectonToken type is provided for container.get(${friendlyName})`);
             }
 
-            const entry = this.#registry.get(token);
+            const entry = this.#registry.get(token) as Entry<T>;
 
             if (!entry) throw new ContainerError(`No provider found by the provided injectonToken: ${friendlyName}`);
 
@@ -121,6 +124,12 @@ class Store implements Container {
                 }
                 case 'factory': {
                     return entry.value(this);
+                }
+                case 'singleton': {
+                    if (!entry.instance) {
+                        entry.instance = new entry.value();
+                    }
+                    return entry.instance;
                 }
                 default:
                     throw new ContainerError('Unknown entry type. This is likely a bug in wapidi');

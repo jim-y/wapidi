@@ -1,4 +1,4 @@
-import { moduleSymbol, optionsSymbol, prefixSymbol, routesSymbol } from './helpers';
+import { moduleSymbol, optionsSymbol, prefixSymbol, routesSymbol } from './symbols';
 import { InjectionToken } from './InjectionToken';
 import { Middleware, MiddlewareFactory } from './Middleware';
 
@@ -53,9 +53,9 @@ export function isClassDecoratorContext(context: any): context is ClassDecorator
 // =====    Container    =====
 // ===========================
 
-type ClassProvider = Instantiable;
-type ConstantProvider = any;
-type FactoryProvider = Function;
+type ClassProvider<T = unknown> = Instantiable<T>;
+type ConstantProvider<T = any> = T;
+type FactoryProvider<T = unknown> = (container: Container) => T;
 
 export interface Container {
     id: symbol;
@@ -69,18 +69,23 @@ export interface Container {
 
 export type Registry = Map<symbol, Entry>;
 
-export type Entry =
+export type Entry<T = unknown> =
     | {
           type: 'class';
-          value: ClassProvider;
+          value: ClassProvider<T>;
       }
     | {
           type: 'factory';
-          value: FactoryProvider;
+          value: FactoryProvider<T>;
       }
     | {
           type: 'constant';
-          value: ConstantProvider;
+          value: ConstantProvider<T>;
+      }
+    | {
+          type: 'singleton';
+          value: ClassProvider<T>;
+          instance?: T; // lazy initialization
       };
 
 export type Instantiable<T = any> = {
